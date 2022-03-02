@@ -32,6 +32,7 @@ type Client interface {
 	DescribeSnapshots(input *ec2.DescribeSnapshotsInput) (*ec2.DescribeSnapshotsOutput, error)
 	DescribeVolumes(input *ec2.DescribeVolumesInput) (*ec2.DescribeVolumesOutput, error)
 	GetCallerIdentity(input *sts.GetCallerIdentityInput) (*sts.GetCallerIdentityOutput, error)
+	AssumeRole(input *sts.AssumeRoleInput) (*sts.AssumeRoleOutput, error)
 }
 
 type ClientBuilder struct {
@@ -242,6 +243,25 @@ func (c *awsClient) DescribeVolumes(input *ec2.DescribeVolumesInput) (*ec2.Descr
 			return nil, err
 		}
 		return nil, fmt.Errorf("describe volumes failed, %s", err)
+	}
+
+	return result, nil
+}
+
+func (c *awsClient) AssumeRole(input *sts.AssumeRoleInput) (*sts.AssumeRoleOutput, error) {
+	result, err := c.stsClient.AssumeRole(input)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			default:
+				return nil, aerr
+			}
+		} else {
+			// Print the error, cast err to awserr.Error to get the Code and
+			// Message from an error.
+			return nil, err
+		}
+		return nil, fmt.Errorf("Failed to assume role %s", err)
 	}
 
 	return result, nil

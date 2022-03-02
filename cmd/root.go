@@ -18,6 +18,7 @@ package cmd
 import (
 	"os"
 
+	assumeRole "github.com/jharrington22/aws-resource/cmd/assume-role"
 	"github.com/jharrington22/aws-resource/cmd/list"
 	"github.com/jharrington22/aws-resource/cmd/whoami"
 	"github.com/spf13/cobra"
@@ -44,6 +45,7 @@ func Execute() {
 }
 
 func init() {
+	RootCmd.AddCommand(assumeRole.Cmd)
 	RootCmd.AddCommand(list.ListCmd)
 	RootCmd.AddCommand(whoami.WhoAmICmd)
 	// Here you will define your flags and configuration settings.
