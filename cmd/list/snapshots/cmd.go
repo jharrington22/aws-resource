@@ -20,6 +20,7 @@ import (
 	"os"
 
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/jharrington22/aws-resource/pkg/arguments"
 	"github.com/jharrington22/aws-resource/pkg/aws"
 	logging "github.com/jharrington22/aws-resource/pkg/logging"
 	rprtr "github.com/jharrington22/aws-resource/pkg/reporter"
@@ -39,11 +40,9 @@ aws-resource list snapshots.`,
 		reporter := rprtr.CreateReporterOrExit()
 		logging := logging.CreateLoggerOrExit(reporter)
 
-		region := "us-east-1"
-
 		awsClient, err := aws.NewClient().
 			Logger(logging).
-			Region(region).
+			Region(arguments.Region).
 			Build()
 
 		if err != nil {
