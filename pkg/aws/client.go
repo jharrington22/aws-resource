@@ -5,6 +5,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
@@ -67,8 +68,11 @@ func (b *ClientBuilder) BuildSessionWithOptionsCredentials(value *credentials.Va
 			CredentialsChainVerboseErrors: aws.Bool(true),
 			Region:                        b.region,
 			Credentials:                   credentials.NewStaticCredentials(value.AccessKeyID, value.SecretAccessKey, ""),
+			RequestRetryer: 					client.DefaultRetryer{
+				MinRetryDelay: 1 * time.second,
+			},
 		},
-	})
+	}
 }
 
 func (b *ClientBuilder) BuildSessionWithOptions() (*session.Session, error) {
