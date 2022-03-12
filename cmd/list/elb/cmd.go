@@ -16,7 +16,6 @@ limitations under the License.
 package elb
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/aws/aws-sdk-go/service/ec2"
@@ -28,15 +27,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// listCmd represents the list command
+// Cmd represents the list command
 var Cmd = &cobra.Command{
 	Use:   "elb",
 	Short: "List ELB instances",
 	Long: `List ELB instances for all or a specific region
 
-aws-resource list ec2.`,
+aws-resource list ec2`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Listing elb load balancers")
 
 		reporter := rprtr.CreateReporterOrExit()
 		logging := logging.CreateLoggerOrExit(reporter)
@@ -47,13 +45,13 @@ aws-resource list ec2.`,
 			Build()
 
 		if err != nil {
-			fmt.Errorf("Unable to build AWS client")
+			reporter.Errorf("Unable to build AWS client")
 			os.Exit(1)
 		}
 
 		regions, err := awsClient.DescribeRegions(&ec2.DescribeRegionsInput{})
 		if err != nil {
-			fmt.Errorf("Failed to describe regions")
+			reporter.Errorf("Failed to describe regions")
 			os.Exit(1)
 		}
 
@@ -67,7 +65,7 @@ aws-resource list ec2.`,
 				Build()
 
 			if err != nil {
-				fmt.Errorf("Unable to build AWS client in %s", regionName)
+				reporter.Errorf("Unable to build AWS client in %s", regionName)
 				os.Exit(1)
 			}
 
@@ -77,23 +75,9 @@ aws-resource list ec2.`,
 
 			lbCount := 0
 			for _, _ = range result.LoadBalancerDescriptions {
-				// fmt.Println(fmt.Sprintf("id: %s", *i.InstanceId))
-				// fmt.Println(fmt.Sprintf("id: %v", i.Tags))
-				// fmt.Println(fmt.Sprintf("state: %v", *i.State.Name))
-				// if *i.ImageId != ami["initializationAMI"] {
-				// 	fmt.Println("Instance doesn't have matching AMI ID, not terminating")
-				// 	continue
-				// }
-
 				lbCount++
-
-				//err := TerminateEC3Instance(svc, *i.InstanceId)
-				//if err != nil {
-				//	fmt.Println(err)
-				//	continue
-				//}
 			}
-			fmt.Printf("Found %d running load balancers in %s\n", lbCount, regionName)
+			reporter.Infof("Found %d running load balancers in %s\n", lbCount, regionName)
 		}
 
 	},
