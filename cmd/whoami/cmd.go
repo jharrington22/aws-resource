@@ -16,7 +16,6 @@ limitations under the License.
 package whoami
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/aws/aws-sdk-go/service/sts"
@@ -42,17 +41,17 @@ var WhoAmICmd = &cobra.Command{
 			Build()
 
 		if err != nil {
-			fmt.Errorf("Unable to build AWS client")
+			reporter.Errorf("Unable to build AWS client")
 			os.Exit(1)
 		}
 
 		identity, err := awsClient.GetCallerIdentity(&sts.GetCallerIdentityInput{})
 		if err != nil {
-			fmt.Errorf("Error %s", err)
+			reporter.Errorf("Error %s", err)
 			os.Exit(1)
 		}
 
-		fmt.Printf("AWS Account: %s\n", *identity.Account)
+		reporter.Infof("AWS Account: %s\n", *identity.Account)
 	},
 }
 
