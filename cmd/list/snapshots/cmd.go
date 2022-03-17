@@ -80,7 +80,7 @@ aws-resource list snapshots`,
 			for _, _ = range result.Snapshots {
 				snapshotCount++
 			}
-			reporter.Infof("Found %d snapshots in %s\n", snapshotCount, regionName)
+			reporter.Infof("Found %d snapshots in %s", snapshotCount, regionName)
 		}
 
 	},

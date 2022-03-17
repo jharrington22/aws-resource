@@ -77,7 +77,7 @@ aws-resource list elbv2`,
 			for _, _ = range result.LoadBalancers {
 				lbv2Count++
 			}
-			reporter.Infof("Found %d running v2 load balancers in %s\n", lbv2Count, regionName)
+			reporter.Infof("Found %d running v2 load balancers in %s", lbv2Count, regionName)
 		}
 
 	},

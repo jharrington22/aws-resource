@@ -77,7 +77,7 @@ aws-resource list ec2`,
 			for _, _ = range result.LoadBalancerDescriptions {
 				lbCount++
 			}
-			reporter.Infof("Found %d running load balancers in %s\n", lbCount, regionName)
+			reporter.Infof("Found %d running load balancers in %s", lbCount, regionName)
 		}
 
 	},
