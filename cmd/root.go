@@ -20,6 +20,7 @@ import (
 
 	"github.com/jharrington22/aws-resource/cmd/list"
 	"github.com/jharrington22/aws-resource/cmd/whoami"
+	"github.com/jharrington22/aws-resource/pkg/arguments"
 	"github.com/spf13/cobra"
 )
 
@@ -49,6 +50,8 @@ func init() {
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
+	flags := RootCmd.PersistentFlags()
+	arguments.AddFlags(flags)
 
 	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.aws-resource.yaml)")
 
