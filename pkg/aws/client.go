@@ -16,6 +16,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/elbv2/elbv2iface"
 	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/aws/aws-sdk-go/service/iam/iamiface"
+	"github.com/aws/aws-sdk-go/service/route53"
+	"github.com/aws/aws-sdk-go/service/route53/route53iface"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/aws/aws-sdk-go/service/sts/stsiface"
 	"github.com/sirupsen/logrus"
@@ -33,6 +35,7 @@ type Client interface {
 	DescribeSnapshots(input *ec2.DescribeSnapshotsInput) (*ec2.DescribeSnapshotsOutput, error)
 	DescribeVolumes(input *ec2.DescribeVolumesInput) (*ec2.DescribeVolumesOutput, error)
 	GetCallerIdentity(input *sts.GetCallerIdentityInput) (*sts.GetCallerIdentityOutput, error)
+	ListHostedZonesByName(input *route53.ListHostedZonesByNameInput) (*route53.ListHostedZonesByNameOutput, error)
 }
 
 type ClientBuilder struct {
@@ -111,24 +114,26 @@ func (b *ClientBuilder) Build() (Client, error) {
 	}
 
 	c := &awsClient{
-		logger:      b.logger,
-		ec2Client:   ec2.New(sess),
-		elbClient:   elb.New(sess),
-		elbV2Client: elbv2.New(sess),
-		iamClient:   iam.New(sess),
-		stsClient:   sts.New(sess),
+		logger:        b.logger,
+		ec2Client:     ec2.New(sess),
+		elbClient:     elb.New(sess),
+		elbV2Client:   elbv2.New(sess),
+		iamClient:     iam.New(sess),
+		route53Client: route53.New(sess),
+		stsClient:     sts.New(sess),
 	}
 
 	return c, err
 }
 
 type awsClient struct {
-	logger      *logrus.Logger
-	ec2Client   ec2iface.EC2API
-	elbClient   elbiface.ELBAPI
-	elbV2Client elbv2iface.ELBV2API
-	iamClient   iamiface.IAMAPI
-	stsClient   stsiface.STSAPI
+	logger        *logrus.Logger
+	ec2Client     ec2iface.EC2API
+	elbClient     elbiface.ELBAPI
+	elbV2Client   elbv2iface.ELBV2API
+	iamClient     iamiface.IAMAPI
+	route53Client route53iface.Route53API
+	stsClient     stsiface.STSAPI
 }
 
 func (c *awsClient) DescribeInstances(input *ec2.DescribeInstancesInput) (*ec2.DescribeInstancesOutput, error) {
@@ -268,4 +273,25 @@ func (c *awsClient) GetCallerIdentity(input *sts.GetCallerIdentityInput) (*sts.G
 	}
 
 	return result, nil
+}
+
+func (c *awsClient) ListHostedZonesByName(input *route53.ListHostedZonesByNameInput) (*route53.ListHostedZonesByNameOutput, error) {
+
+	result, err := c.route53Client.ListHostedZonesByName(input)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			default:
+				return nil, aerr
+			}
+		} else {
+			// Print the error, cast err to awserr.Error to get the Code and
+			// Message from an error.
+			return nil, err
+		}
+		return nil, fmt.Errorf("describe instances failed, %s", err)
+	}
+
+	return result, nil
+
 }
