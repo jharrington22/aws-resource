@@ -16,6 +16,7 @@ limitations under the License.
 package ec2
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
@@ -36,7 +37,8 @@ var Cmd = &cobra.Command{
 	Long: `List EC2 instances for all or a specific region
 
 aws-resource list ec2`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(cmd *cobra.Command, _ []string) {
+		fmt.Println("Listing ec2 instances")
 
 		reporter := rprtr.CreateReporterOrExit()
 		logging := logging.CreateLoggerOrExit(reporter)
@@ -75,21 +77,19 @@ aws-resource list ec2`,
 
 			result, err := awsClient.DescribeInstances(input)
 
-			instanceCount := 0
 			var instanceNamesList []string
 			var runningInstanceList []*ec2.Instance
 			for _, r := range result.Reservations {
 				for _, i := range r.Instances {
 					if *i.State.Name == "running" {
 						runningInstanceList = append(runningInstanceList, i)
-						instanceCount++
 						if instanceNames {
 							instanceNamesList = append(instanceNamesList, getInstanceName(i.Tags))
 						}
 					}
 				}
 			}
-			reporter.Infof("Found %d running instances in %s", instanceCount, regionName)
+			reporter.Infof("Found %d running instances in %s", len(runningInstanceList), regionName)
 
 			if len(instanceNamesList) != 0 {
 				reporter.Infof("%s", strings.Join(instanceNamesList, "\n"))

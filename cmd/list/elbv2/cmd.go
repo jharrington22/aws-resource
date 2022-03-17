@@ -73,11 +73,11 @@ aws-resource list elbv2`,
 
 			result, err := awsClient.DescribeV2LoadBalancers(input)
 
-			lbv2Count := 0
-			for _, _ = range result.LoadBalancers {
-				lbv2Count++
+			var loadBalancersV2 []*elbv2.LoadBalancer
+			for _, loadBalancerV2 := range result.LoadBalancers {
+				loadBalancersV2 = append(loadBalancersV2, loadBalancerV2)
 			}
-			reporter.Infof("Found %d running v2 load balancers in %s", lbv2Count, regionName)
+			reporter.Infof("Found %d running v2 load balancers in %s", len(loadBalancersV2), regionName)
 		}
 
 	},

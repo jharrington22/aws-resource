@@ -53,11 +53,11 @@ aws-resource list route53.`,
 
 		result, err := awsClient.ListHostedZonesByName(input)
 
-		hostedZonesCount := 0
-		for _, _ = range result.HostedZones {
-			hostedZonesCount++
+		var hostedZones []*route53.HostedZone
+		for _, hostedZone := range result.HostedZones {
+			hostedZones = append(hostedZones, hostedZone)
 		}
-		reporter.Infof("Found %d hosted zoned", hostedZonesCount)
+		reporter.Infof("Found %d hosted zones", len(hostedZones))
 	},
 }
 
