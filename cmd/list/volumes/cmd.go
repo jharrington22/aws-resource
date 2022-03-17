@@ -75,7 +75,7 @@ aws-resource list volumes`,
 			for _, _ = range result.Volumes {
 				volumeCount++
 			}
-			reporter.Infof("Found %d volumes in %s\n", volumeCount, regionName)
+			reporter.Infof("Found %d volumes in %s", volumeCount, regionName)
 		}
 
 	},

@@ -89,7 +89,7 @@ aws-resource list ec2`,
 					}
 				}
 			}
-			reporter.Infof("Found %d running instances in %s\n", instanceCount, regionName)
+			reporter.Infof("Found %d running instances in %s", instanceCount, regionName)
 
 			if len(instanceNamesList) != 0 {
 				reporter.Infof("%s", strings.Join(instanceNamesList, "\n"))

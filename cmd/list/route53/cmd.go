@@ -16,7 +16,6 @@ limitations under the License.
 package route53
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/aws/aws-sdk-go/service/route53"
@@ -34,7 +33,6 @@ var Cmd = &cobra.Command{
 
 aws-resource list route53.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Listing route53 hosted zones")
 
 		reporter := rprtr.CreateReporterOrExit()
 		logging := logging.CreateLoggerOrExit(reporter)
@@ -47,7 +45,7 @@ aws-resource list route53.`,
 			Build()
 
 		if err != nil {
-			fmt.Errorf("Unable to build AWS client")
+			reporter.Errorf("Unable to build AWS client")
 			os.Exit(1)
 		}
 
@@ -57,23 +55,9 @@ aws-resource list route53.`,
 
 		hostedZonesCount := 0
 		for _, _ = range result.HostedZones {
-			// fmt.Println(fmt.Sprintf("id: %s", *i.InstanceId))
-			// fmt.Println(fmt.Sprintf("id: %v", i.Tags))
-			// fmt.Println(fmt.Sprintf("state: %v", *i.State.Name))
-			// if *i.ImageId != ami["initializationAMI"] {
-			// 	fmt.Println("Instance doesn't have matching AMI ID, not terminating")
-			// 	continue
-			// }
-
 			hostedZonesCount++
-
-			//err := TerminateEC3Instance(svc, *i.InstanceId)
-			//if err != nil {
-			//	fmt.Println(err)
-			//	continue
-			//}
 		}
-		fmt.Printf("Found %d hosted zoned", hostedZonesCount)
+		reporter.Infof("Found %d hosted zoned", hostedZonesCount)
 	},
 }
 
