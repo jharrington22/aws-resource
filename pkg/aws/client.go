@@ -2,6 +2,7 @@ package aws
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -71,11 +72,12 @@ func (b *ClientBuilder) BuildSessionWithOptionsCredentials(value *credentials.Va
 			CredentialsChainVerboseErrors: aws.Bool(true),
 			Region:                        b.region,
 			Credentials:                   credentials.NewStaticCredentials(value.AccessKeyID, value.SecretAccessKey, ""),
-			RequestRetryer: 					client.DefaultRetryer{
-				MinRetryDelay: 1 * time.second,
+			Retryer: client.DefaultRetryer{
+				MinRetryDelay: 1 * time.Second,
 			},
 		},
-	}
+	},
+	)
 }
 
 func (b *ClientBuilder) BuildSessionWithOptions() (*session.Session, error) {
