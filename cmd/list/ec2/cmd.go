@@ -17,6 +17,7 @@ package ec2
 
 import (
 	"os"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/jharrington22/aws-resource/pkg/arguments"
@@ -25,6 +26,8 @@ import (
 	rprtr "github.com/jharrington22/aws-resource/pkg/reporter"
 	"github.com/spf13/cobra"
 )
+
+var instanceNames bool
 
 // Cmd represents the list command
 var Cmd = &cobra.Command{
@@ -73,18 +76,41 @@ aws-resource list ec2`,
 			result, err := awsClient.DescribeInstances(input)
 
 			instanceCount := 0
+			var instanceNamesList []string
+			var runningInstanceList []*ec2.Instance
 			for _, r := range result.Reservations {
 				for _, i := range r.Instances {
 					if *i.State.Name == "running" {
+						runningInstanceList = append(runningInstanceList, i)
 						instanceCount++
+						if instanceNames {
+							instanceNamesList = append(instanceNamesList, getInstanceName(i.Tags))
+						}
 					}
 				}
 			}
 			reporter.Infof("Found %d running instances in %s\n", instanceCount, regionName)
-		}
 
+			if len(instanceNamesList) != 0 {
+				reporter.Infof("%s", strings.Join(instanceNamesList, "\n"))
+			}
+		}
 	},
 }
 
+func getInstanceName(tags []*ec2.Tag) string {
+	if len(tags) == 0 {
+		return "Instance has no tags"
+	}
+	for _, t := range tags {
+		if *t.Key == "Name" {
+			return *t.Value
+		}
+	}
+	return "Instance has no tag \"Name\""
+}
+
 func init() {
+
+	Cmd.Flags().BoolVar(&instanceNames, "instance-names", false, "Print instance names")
 }
