@@ -76,11 +76,11 @@ aws-resource list snapshots`,
 
 			result, err := awsClient.DescribeSnapshots(input)
 
-			snapshotCount := 0
-			for _, _ = range result.Snapshots {
-				snapshotCount++
+			var snapshots []*ec2.Snapshot
+			for _, snapshot := range result.Snapshots {
+				snapshots = append(snapshots, snapshot)
 			}
-			reporter.Infof("Found %d snapshots in %s", snapshotCount, regionName)
+			reporter.Infof("Found %d snapshots in %s", len(snapshots), regionName)
 		}
 
 	},

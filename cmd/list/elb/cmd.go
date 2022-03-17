@@ -73,11 +73,12 @@ aws-resource list ec2`,
 
 			result, err := awsClient.DescribeLoadBalancers(input)
 
-			lbCount := 0
-			for _, _ = range result.LoadBalancerDescriptions {
-				lbCount++
+			var loadBalancerDescriptions []*elb.LoadBalancerDescription
+			for _, description := range result.LoadBalancerDescriptions {
+				loadBalancerDescriptions = append(loadBalancerDescriptions, description)
+
 			}
-			reporter.Infof("Found %d running load balancers in %s", lbCount, regionName)
+			reporter.Infof("Found %d running load balancers in %s", len(loadBalancerDescriptions), regionName)
 		}
 
 	},

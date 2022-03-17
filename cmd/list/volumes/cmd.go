@@ -71,11 +71,11 @@ aws-resource list volumes`,
 
 			result, err := awsClient.DescribeVolumes(input)
 
-			volumeCount := 0
-			for _, _ = range result.Volumes {
-				volumeCount++
+			var volumes []*ec2.Volume
+			for _, volume := range result.Volumes {
+				volumes = append(volumes, volume)
 			}
-			reporter.Infof("Found %d volumes in %s", volumeCount, regionName)
+			reporter.Infof("Found %d volumes in %s", len(volumes), regionName)
 		}
 
 	},
