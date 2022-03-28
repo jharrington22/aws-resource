@@ -16,8 +16,6 @@ limitations under the License.
 package volumes
 
 import (
-	"os"
-
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/jharrington22/aws-resource/pkg/arguments"
 	"github.com/jharrington22/aws-resource/pkg/aws"
@@ -33,52 +31,68 @@ var Cmd = &cobra.Command{
 	Long: `List EBS volumes for all or a specific region
 
 aws-resource list volumes`,
-	Run: func(cmd *cobra.Command, args []string) {
-		reporter := rprtr.CreateReporterOrExit()
-		logging := logging.CreateLoggerOrExit(reporter)
+	RunE: run,
+}
+
+func run(cmd *cobra.Command, args []string) (err error) {
+	reporter := rprtr.CreateReporterOrExit()
+	logging := logging.CreateLoggerOrExit(reporter)
+
+	reporter.Infof("Listing ebs volumes")
+
+	awsClient, err := aws.NewClient().
+		Logger(logging).
+		Region(arguments.Region).
+		Build()
+
+	if err != nil {
+		reporter.Errorf("Unable to build AWS client")
+		return err
+	}
+
+	regions, err := awsClient.DescribeRegions(&ec2.DescribeRegionsInput{})
+	if err != nil {
+		reporter.Errorf("Failed to describe regions")
+		return err
+	}
+
+	var availableVolumes []*ec2.Volume
+	for _, region := range regions.Regions {
+
+		regionName := *region.RegionName
 
 		awsClient, err := aws.NewClient().
 			Logger(logging).
-			Region(arguments.Region).
+			Region(regionName).
 			Build()
 
 		if err != nil {
-			reporter.Errorf("Unable to build AWS client")
-			os.Exit(1)
+			reporter.Errorf("Unable to build AWS client in %s", regionName)
+			return err
 		}
 
-		regions, err := awsClient.DescribeRegions(&ec2.DescribeRegionsInput{})
+		input := &ec2.DescribeVolumesInput{}
+
+		result, err := awsClient.DescribeVolumes(input)
 		if err != nil {
-			reporter.Errorf("Failed to describe regions")
-			os.Exit(1)
+			reporter.Errorf("Unable to describe volumes %s", err)
+			return err
 		}
 
-		for _, region := range regions.Regions {
-
-			regionName := *region.RegionName
-
-			awsClient, err := aws.NewClient().
-				Logger(logging).
-				Region(regionName).
-				Build()
-
-			if err != nil {
-				reporter.Errorf("Unable to build AWS client in %s", regionName)
-				os.Exit(1)
-			}
-
-			input := &ec2.DescribeVolumesInput{}
-
-			result, err := awsClient.DescribeVolumes(input)
-
-			var volumes []*ec2.Volume
-			for _, volume := range result.Volumes {
-				volumes = append(volumes, volume)
-			}
+		var volumes []*ec2.Volume
+		for _, volume := range result.Volumes {
+			volumes = append(volumes, volume)
+			availableVolumes = append(availableVolumes, volume)
+		}
+		if len(volumes) > 0 {
 			reporter.Infof("Found %d volumes in %s", len(volumes), regionName)
 		}
+	}
+	if len(availableVolumes) == 0 {
+		reporter.Infof("No volumes found")
+	}
+	return
 
-	},
 }
 
 func init() {

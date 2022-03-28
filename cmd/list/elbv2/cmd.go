@@ -16,8 +16,6 @@ limitations under the License.
 package elbv2
 
 import (
-	"os"
-
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/elbv2"
 	"github.com/jharrington22/aws-resource/pkg/arguments"
@@ -34,53 +32,65 @@ var Cmd = &cobra.Command{
 	Long: `List ELBv2 instances for all or a specific region
 
 aws-resource list elbv2`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: run,
+}
 
-		reporter := rprtr.CreateReporterOrExit()
-		logging := logging.CreateLoggerOrExit(reporter)
+func run(cmd *cobra.Command, args []string) (err error) {
+
+	reporter := rprtr.CreateReporterOrExit()
+	logging := logging.CreateLoggerOrExit(reporter)
+
+	reporter.Infof("Listing elbv2 instances")
+
+	awsClient, err := aws.NewClient().
+		Logger(logging).
+		Region(arguments.Region).
+		Build()
+
+	if err != nil {
+		reporter.Errorf("Unable to build AWS client")
+		return err
+	}
+
+	regions, err := awsClient.DescribeRegions(&ec2.DescribeRegionsInput{})
+	if err != nil {
+		reporter.Errorf("Failed to describe regions")
+		return err
+	}
+
+	var runningLoadBalancersV2DescriptionsList []*elbv2.LoadBalancer
+	for _, region := range regions.Regions {
+
+		regionName := *region.RegionName
 
 		awsClient, err := aws.NewClient().
 			Logger(logging).
-			Region(arguments.Region).
+			Region(regionName).
 			Build()
 
 		if err != nil {
-			reporter.Errorf("Unable to build AWS client")
-			os.Exit(1)
+			reporter.Errorf("Unable to build AWS client in %s", regionName)
+			return err
 		}
 
-		regions, err := awsClient.DescribeRegions(&ec2.DescribeRegionsInput{})
-		if err != nil {
-			reporter.Errorf("Failed to describe regions")
-			os.Exit(1)
+		input := &elbv2.DescribeLoadBalancersInput{}
+
+		result, err := awsClient.DescribeV2LoadBalancers(input)
+
+		var loadBalancersV2 []*elbv2.LoadBalancer
+		for _, loadBalancerV2 := range result.LoadBalancers {
+			loadBalancersV2 = append(loadBalancersV2, loadBalancerV2)
+			runningLoadBalancersV2DescriptionsList = append(runningLoadBalancersV2DescriptionsList, loadBalancerV2)
 		}
 
-		for _, region := range regions.Regions {
-
-			regionName := *region.RegionName
-
-			awsClient, err := aws.NewClient().
-				Logger(logging).
-				Region(regionName).
-				Build()
-
-			if err != nil {
-				reporter.Errorf("Unable to build AWS client in %s", regionName)
-				os.Exit(1)
-			}
-
-			input := &elbv2.DescribeLoadBalancersInput{}
-
-			result, err := awsClient.DescribeV2LoadBalancers(input)
-
-			var loadBalancersV2 []*elbv2.LoadBalancer
-			for _, loadBalancerV2 := range result.LoadBalancers {
-				loadBalancersV2 = append(loadBalancersV2, loadBalancerV2)
-			}
+		if len(loadBalancersV2) > 0 {
 			reporter.Infof("Found %d running v2 load balancers in %s", len(loadBalancersV2), regionName)
 		}
-
-	},
+	}
+	if len(runningLoadBalancersV2DescriptionsList) == 0 {
+		reporter.Infof("No running v2 load balancers found")
+	}
+	return
 }
 
 func init() {

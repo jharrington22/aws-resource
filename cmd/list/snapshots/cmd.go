@@ -33,57 +33,76 @@ var Cmd = &cobra.Command{
 	Long: `List EBS snapshots for all or a specific region
 
 aws-resource list snapshots`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: run,
+}
 
-		reporter := rprtr.CreateReporterOrExit()
-		logging := logging.CreateLoggerOrExit(reporter)
+func run(cmd *cobra.Command, args []string) (err error) {
+
+	reporter := rprtr.CreateReporterOrExit()
+	logging := logging.CreateLoggerOrExit(reporter)
+
+	reporter.Infof("Listing ebs snapshots")
+
+	awsClient, err := aws.NewClient().
+		Logger(logging).
+		Region(arguments.Region).
+		Build()
+
+	if err != nil {
+		reporter.Errorf("Unable to build AWS client")
+		return err
+	}
+
+	regions, err := awsClient.DescribeRegions(&ec2.DescribeRegionsInput{})
+	if err != nil {
+		reporter.Errorf("Failed to describe regions")
+		return err
+	}
+
+	var availableSnapshots []*ec2.Snapshot
+	for _, region := range regions.Regions {
+
+		regionName := *region.RegionName
 
 		awsClient, err := aws.NewClient().
 			Logger(logging).
-			Region(arguments.Region).
+			Region(regionName).
 			Build()
 
 		if err != nil {
-			reporter.Errorf("Unable to build AWS client")
+			reporter.Errorf("Unable to build AWS client in %s", regionName)
 			os.Exit(1)
 		}
 
-		regions, err := awsClient.DescribeRegions(&ec2.DescribeRegionsInput{})
+		owner := "self"
+
+		input := &ec2.DescribeSnapshotsInput{
+			OwnerIds: []*string{&owner},
+		}
+
+		result, err := awsClient.DescribeSnapshots(input)
 		if err != nil {
-			reporter.Errorf("Failed to describe regions")
-			os.Exit(1)
+			reporter.Errorf("Unable to describe snapshots %s", err)
+			return err
 		}
 
-		for _, region := range regions.Regions {
+		var snapshots []*ec2.Snapshot
+		for _, snapshot := range result.Snapshots {
+			snapshots = append(snapshots, snapshot)
+			availableSnapshots = append(availableSnapshots, snapshot)
+		}
 
-			regionName := *region.RegionName
-
-			awsClient, err := aws.NewClient().
-				Logger(logging).
-				Region(regionName).
-				Build()
-
-			if err != nil {
-				reporter.Errorf("Unable to build AWS client in %s", regionName)
-				os.Exit(1)
-			}
-
-			owner := "self"
-
-			input := &ec2.DescribeSnapshotsInput{
-				OwnerIds: []*string{&owner},
-			}
-
-			result, err := awsClient.DescribeSnapshots(input)
-
-			var snapshots []*ec2.Snapshot
-			for _, snapshot := range result.Snapshots {
-				snapshots = append(snapshots, snapshot)
-			}
+		if len(snapshots) > 0 {
 			reporter.Infof("Found %d snapshots in %s", len(snapshots), regionName)
 		}
+	}
 
-	},
+	if len(availableSnapshots) == 0 {
+		reporter.Infof("No snapshots found")
+	}
+
+	return
+
 }
 
 func init() {

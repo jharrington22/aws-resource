@@ -16,11 +16,10 @@ limitations under the License.
 package ec2
 
 import (
-	"fmt"
-	"os"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/jharrington22/aws-resource/cmd/whoami"
 	"github.com/jharrington22/aws-resource/pkg/arguments"
 	"github.com/jharrington22/aws-resource/pkg/aws"
 	logging "github.com/jharrington22/aws-resource/pkg/logging"
@@ -28,7 +27,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var instanceNames bool
+var (
+	instanceNames bool
+	profile       string
+	roleArn       string
+)
 
 // Cmd represents the list command
 var Cmd = &cobra.Command{
@@ -37,65 +40,87 @@ var Cmd = &cobra.Command{
 	Long: `List EC2 instances for all or a specific region
 
 aws-resource list ec2`,
-	Run: func(cmd *cobra.Command, _ []string) {
-		fmt.Println("Listing ec2 instances")
+	RunE: run,
+}
 
-		reporter := rprtr.CreateReporterOrExit()
-		logging := logging.CreateLoggerOrExit(reporter)
+func run(cmd *cobra.Command, args []string) (err error) {
+	reporter := rprtr.CreateReporterOrExit()
+	logging := logging.CreateLoggerOrExit(reporter)
+
+	reporter.Infof("Listing ec2 instances")
+
+	awsClient, err := aws.NewClient().
+		Logger(logging).
+		Profile(profile).
+		RoleArn(roleArn).
+		Region(arguments.Region).
+		Build()
+
+	if err != nil {
+		reporter.Errorf("Unable to build AWS client")
+		return err
+	}
+	if profile != "" || roleArn != "" {
+		err := whoami.WhoAmICmd.RunE(cmd, args)
+		if err != nil {
+			reporter.Errorf("Unable to verify AWS account %s", err)
+		}
+	}
+
+	regions, err := awsClient.DescribeRegions(&ec2.DescribeRegionsInput{})
+	if err != nil {
+		reporter.Errorf("Failed to describe regions; %s", err)
+		return err
+	}
+
+	var instancesFound bool
+
+	for _, region := range regions.Regions {
+
+		regionName := *region.RegionName
 
 		awsClient, err := aws.NewClient().
 			Logger(logging).
-			Region(arguments.Region).
+			Profile(profile).
+			RoleArn(roleArn).
+			Region(regionName).
 			Build()
 
 		if err != nil {
-			reporter.Errorf("Unable to build AWS client")
-			os.Exit(1)
+			reporter.Errorf("Unable to build AWS client in %s", regionName)
+			return err
 		}
 
-		regions, err := awsClient.DescribeRegions(&ec2.DescribeRegionsInput{})
-		if err != nil {
-			reporter.Errorf("Failed to describe regions")
-			os.Exit(1)
-		}
+		input := &ec2.DescribeInstancesInput{}
 
-		for _, region := range regions.Regions {
+		result, err := awsClient.DescribeInstances(input)
 
-			regionName := *region.RegionName
-
-			awsClient, err := aws.NewClient().
-				Logger(logging).
-				Region(regionName).
-				Build()
-
-			if err != nil {
-				reporter.Errorf("Unable to build AWS client in %s", regionName)
-				os.Exit(1)
-			}
-
-			input := &ec2.DescribeInstancesInput{}
-
-			result, err := awsClient.DescribeInstances(input)
-
-			var instanceNamesList []string
-			var runningInstanceList []*ec2.Instance
-			for _, r := range result.Reservations {
-				for _, i := range r.Instances {
-					if *i.State.Name == "running" {
-						runningInstanceList = append(runningInstanceList, i)
-						if instanceNames {
-							instanceNamesList = append(instanceNamesList, getInstanceName(i.Tags))
-						}
+		var instanceNamesList []string
+		var runningInstanceList []*ec2.Instance
+		for _, r := range result.Reservations {
+			for _, i := range r.Instances {
+				if *i.State.Name == "running" {
+					runningInstanceList = append(runningInstanceList, i)
+					if instanceNames {
+						instanceNamesList = append(instanceNamesList, getInstanceName(i.Tags))
 					}
 				}
 			}
-			reporter.Infof("Found %d running instances in %s", len(runningInstanceList), regionName)
-
-			if len(instanceNamesList) != 0 {
-				reporter.Infof("%s", strings.Join(instanceNamesList, "\n"))
-			}
 		}
-	},
+		if len(runningInstanceList) > 0 {
+			instancesFound = true
+			reporter.Infof("Found %d running instances in %s", len(runningInstanceList), regionName)
+		}
+
+		if len(instanceNamesList) != 0 {
+			reporter.Infof("Instance names:\n%s", strings.Join(instanceNamesList, "\n"))
+		}
+	}
+	if !instancesFound {
+		reporter.Infof("No instances found in account")
+	}
+
+	return
 }
 
 func getInstanceName(tags []*ec2.Tag) string {
@@ -113,4 +138,6 @@ func getInstanceName(tags []*ec2.Tag) string {
 func init() {
 
 	Cmd.Flags().BoolVar(&instanceNames, "instance-names", false, "Print instance names")
+	Cmd.Flags().StringVarP(&roleArn, "role-arn", "a", "", "AWS Role to assume")
+	Cmd.Flags().StringVarP(&profile, "profile", "p", "", "AWS Profile to use")
 }
