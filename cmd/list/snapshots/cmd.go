@@ -45,6 +45,8 @@ func run(cmd *cobra.Command, args []string) (err error) {
 
 	awsClient, err := aws.NewClient().
 		Logger(logging).
+		Profile(arguments.Profile).
+		RoleArn(arguments.RoleArn).
 		Region(arguments.Region).
 		Build()
 
@@ -66,6 +68,8 @@ func run(cmd *cobra.Command, args []string) (err error) {
 
 		awsClient, err := aws.NewClient().
 			Logger(logging).
+			Profile(arguments.Profile).
+			RoleArn(arguments.RoleArn).
 			Region(regionName).
 			Build()
 
@@ -106,4 +110,7 @@ func run(cmd *cobra.Command, args []string) (err error) {
 }
 
 func init() {
+	// Add global flags
+	flags := Cmd.Flags()
+	arguments.AddFlags(flags)
 }

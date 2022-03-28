@@ -17,6 +17,7 @@ package route53
 
 import (
 	"github.com/aws/aws-sdk-go/service/route53"
+	"github.com/jharrington22/aws-resource/pkg/arguments"
 	"github.com/jharrington22/aws-resource/pkg/aws"
 	logging "github.com/jharrington22/aws-resource/pkg/logging"
 	rprtr "github.com/jharrington22/aws-resource/pkg/reporter"
@@ -40,11 +41,11 @@ func run(cmd *cobra.Command, args []string) (err error) {
 
 	reporter.Infof("Listing route53 hosted zones")
 
-	region := "us-east-1"
-
 	awsClient, err := aws.NewClient().
 		Logger(logging).
-		Region(region).
+		Profile(arguments.Profile).
+		RoleArn(arguments.RoleArn).
+		Region(arguments.Region).
 		Build()
 
 	if err != nil {
@@ -71,14 +72,7 @@ func run(cmd *cobra.Command, args []string) (err error) {
 }
 
 func init() {
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// listCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// listCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// Add global flags
+	flags := Cmd.Flags()
+	arguments.AddFlags(flags)
 }

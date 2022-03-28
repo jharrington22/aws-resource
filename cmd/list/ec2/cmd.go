@@ -19,7 +19,6 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/service/ec2"
-	"github.com/jharrington22/aws-resource/cmd/whoami"
 	"github.com/jharrington22/aws-resource/pkg/arguments"
 	"github.com/jharrington22/aws-resource/pkg/aws"
 	logging "github.com/jharrington22/aws-resource/pkg/logging"
@@ -29,8 +28,6 @@ import (
 
 var (
 	instanceNames bool
-	profile       string
-	roleArn       string
 )
 
 // Cmd represents the list command
@@ -51,20 +48,14 @@ func run(cmd *cobra.Command, args []string) (err error) {
 
 	awsClient, err := aws.NewClient().
 		Logger(logging).
-		Profile(profile).
-		RoleArn(roleArn).
+		Profile(arguments.Profile).
+		RoleArn(arguments.RoleArn).
 		Region(arguments.Region).
 		Build()
 
 	if err != nil {
 		reporter.Errorf("Unable to build AWS client")
 		return err
-	}
-	if profile != "" || roleArn != "" {
-		err := whoami.WhoAmICmd.RunE(cmd, args)
-		if err != nil {
-			reporter.Errorf("Unable to verify AWS account %s", err)
-		}
 	}
 
 	regions, err := awsClient.DescribeRegions(&ec2.DescribeRegionsInput{})
@@ -81,8 +72,8 @@ func run(cmd *cobra.Command, args []string) (err error) {
 
 		awsClient, err := aws.NewClient().
 			Logger(logging).
-			Profile(profile).
-			RoleArn(roleArn).
+			Profile(arguments.Profile).
+			RoleArn(arguments.RoleArn).
 			Region(regionName).
 			Build()
 
@@ -136,8 +127,9 @@ func getInstanceName(tags []*ec2.Tag) string {
 }
 
 func init() {
+	// Add global flags
+	flags := Cmd.Flags()
+	arguments.AddFlags(flags)
 
 	Cmd.Flags().BoolVar(&instanceNames, "instance-names", false, "Print instance names")
-	Cmd.Flags().StringVarP(&roleArn, "role-arn", "a", "", "AWS Role to assume")
-	Cmd.Flags().StringVarP(&profile, "profile", "p", "", "AWS Profile to use")
 }
