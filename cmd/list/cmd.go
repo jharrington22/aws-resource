@@ -18,6 +18,7 @@ package list
 import (
 	"fmt"
 
+	"github.com/jharrington22/aws-resource/cmd/list/all"
 	"github.com/jharrington22/aws-resource/cmd/list/ec2"
 	"github.com/jharrington22/aws-resource/cmd/list/elb"
 	"github.com/jharrington22/aws-resource/cmd/list/elbv2"
@@ -43,6 +44,7 @@ aws-resource list volumes`,
 
 func init() {
 
+	ListCmd.AddCommand(all.Cmd)
 	ListCmd.AddCommand(ec2.Cmd)
 	ListCmd.AddCommand(elb.Cmd)
 	ListCmd.AddCommand(elbv2.Cmd)

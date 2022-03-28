@@ -31,28 +31,32 @@ var WhoAmICmd = &cobra.Command{
 	Use:   "whoami",
 	Short: "Get AWS account information",
 	Long:  `Get AWS account information by querying STS`,
-	Run: func(cmd *cobra.Command, args []string) {
-		reporter := rprtr.CreateReporterOrExit()
-		logging := logging.CreateLoggerOrExit(reporter)
+	RunE:  run,
+}
 
-		awsClient, err := aws.NewClient().
-			Logger(logging).
-			Region(arguments.Region).
-			Build()
+func run(cmd *cobra.Command, args []string) (err error) {
+	reporter := rprtr.CreateReporterOrExit()
+	logging := logging.CreateLoggerOrExit(reporter)
 
-		if err != nil {
-			reporter.Errorf("Unable to build AWS client")
-			os.Exit(1)
-		}
+	awsClient, err := aws.NewClient().
+		Logger(logging).
+		Region(arguments.Region).
+		Build()
 
-		identity, err := awsClient.GetCallerIdentity(&sts.GetCallerIdentityInput{})
-		if err != nil {
-			reporter.Errorf("Error %s", err)
-			os.Exit(1)
-		}
+	if err != nil {
+		reporter.Errorf("Unable to build AWS client")
+		os.Exit(1)
+	}
 
-		reporter.Infof("AWS Account: %s\n", *identity.Account)
-	},
+	identity, err := awsClient.GetCallerIdentity(&sts.GetCallerIdentityInput{})
+	if err != nil {
+		reporter.Errorf("Error %s", err)
+		os.Exit(1)
+	}
+
+	reporter.Infof("AWS Account: %s", *identity.Account)
+
+	return
 }
 
 func init() {

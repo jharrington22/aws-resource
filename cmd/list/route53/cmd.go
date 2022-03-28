@@ -16,8 +16,6 @@ limitations under the License.
 package route53
 
 import (
-	"os"
-
 	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/jharrington22/aws-resource/pkg/aws"
 	logging "github.com/jharrington22/aws-resource/pkg/logging"
@@ -32,33 +30,44 @@ var Cmd = &cobra.Command{
 	Long: `List route53 resources"
 
 aws-resource list route53.`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: run,
+}
 
-		reporter := rprtr.CreateReporterOrExit()
-		logging := logging.CreateLoggerOrExit(reporter)
+func run(cmd *cobra.Command, args []string) (err error) {
 
-		region := "us-east-1"
+	reporter := rprtr.CreateReporterOrExit()
+	logging := logging.CreateLoggerOrExit(reporter)
 
-		awsClient, err := aws.NewClient().
-			Logger(logging).
-			Region(region).
-			Build()
+	reporter.Infof("Listing route53 hosted zones")
 
-		if err != nil {
-			reporter.Errorf("Unable to build AWS client")
-			os.Exit(1)
-		}
+	region := "us-east-1"
 
-		input := &route53.ListHostedZonesByNameInput{}
+	awsClient, err := aws.NewClient().
+		Logger(logging).
+		Region(region).
+		Build()
 
-		result, err := awsClient.ListHostedZonesByName(input)
+	if err != nil {
+		reporter.Errorf("Unable to build AWS client")
+		return err
+	}
 
-		var hostedZones []*route53.HostedZone
-		for _, hostedZone := range result.HostedZones {
-			hostedZones = append(hostedZones, hostedZone)
-		}
+	input := &route53.ListHostedZonesByNameInput{}
+
+	result, err := awsClient.ListHostedZonesByName(input)
+
+	var hostedZones []*route53.HostedZone
+	for _, hostedZone := range result.HostedZones {
+		hostedZones = append(hostedZones, hostedZone)
+	}
+
+	if len(hostedZones) > 0 {
 		reporter.Infof("Found %d hosted zones", len(hostedZones))
-	},
+	}
+	if len(hostedZones) == 0 {
+		reporter.Infof("No hosted zones found")
+	}
+	return
 }
 
 func init() {

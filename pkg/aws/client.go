@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
@@ -43,6 +44,7 @@ type ClientBuilder struct {
 	logger      *logrus.Logger
 	region      *string
 	profile     *string
+	roleArn     *string
 	credentials *credentials.Value
 }
 
@@ -65,6 +67,11 @@ func (b *ClientBuilder) Region(value string) *ClientBuilder {
 	return b
 }
 
+func (b *ClientBuilder) RoleArn(value string) *ClientBuilder {
+	b.roleArn = aws.String(value)
+	return b
+}
+
 // Create AWS session with a specific set of credentials
 func (b *ClientBuilder) BuildSessionWithOptionsCredentials(value *credentials.Value) (*session.Session, error) {
 	return session.NewSessionWithOptions(session.Options{
@@ -83,7 +90,17 @@ func (b *ClientBuilder) BuildSessionWithOptionsCredentials(value *credentials.Va
 func (b *ClientBuilder) BuildSessionWithOptions() (*session.Session, error) {
 	return session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
-		// Profile:           *b.profile,
+		Config: aws.Config{
+			CredentialsChainVerboseErrors: aws.Bool(true),
+			Region:                        b.region,
+		},
+	})
+}
+
+func (b *ClientBuilder) BuildSessionWithProfileOptions() (*session.Session, error) {
+	return session.NewSessionWithOptions(session.Options{
+		SharedConfigState: session.SharedConfigEnable,
+		Profile:           *b.profile,
 		Config: aws.Config{
 			CredentialsChainVerboseErrors: aws.Bool(true),
 			Region:                        b.region,
@@ -108,6 +125,9 @@ func (b *ClientBuilder) Build() (Client, error) {
 	// Create the AWS session:
 	if b.credentials != nil {
 		sess, err = b.BuildSessionWithOptionsCredentials(b.credentials)
+	}
+	if b.profile != nil && *b.profile != "" {
+		sess, err = b.BuildSessionWithProfileOptions()
 	} else {
 		sess, err = b.BuildSessionWithOptions()
 	}
@@ -115,7 +135,22 @@ func (b *ClientBuilder) Build() (Client, error) {
 		return nil, err
 	}
 
-	c := &awsClient{
+	if b.roleArn != nil {
+		if *b.roleArn != "" {
+			assumeRoleCreds := stscreds.NewCredentials(sess, *b.roleArn)
+			return &awsClient{
+				logger:        b.logger,
+				ec2Client:     ec2.New(sess, &aws.Config{Credentials: assumeRoleCreds}),
+				elbClient:     elb.New(sess, &aws.Config{Credentials: assumeRoleCreds}),
+				elbV2Client:   elbv2.New(sess, &aws.Config{Credentials: assumeRoleCreds}),
+				iamClient:     iam.New(sess, &aws.Config{Credentials: assumeRoleCreds}),
+				route53Client: route53.New(sess, &aws.Config{Credentials: assumeRoleCreds}),
+				stsClient:     sts.New(sess, &aws.Config{Credentials: assumeRoleCreds}),
+			}, nil
+		}
+	}
+
+	return &awsClient{
 		logger:        b.logger,
 		ec2Client:     ec2.New(sess),
 		elbClient:     elb.New(sess),
@@ -123,9 +158,7 @@ func (b *ClientBuilder) Build() (Client, error) {
 		iamClient:     iam.New(sess),
 		route53Client: route53.New(sess),
 		stsClient:     sts.New(sess),
-	}
-
-	return c, err
+	}, nil
 }
 
 type awsClient struct {
