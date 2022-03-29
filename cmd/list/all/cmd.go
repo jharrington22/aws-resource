@@ -23,6 +23,7 @@ import (
 	snapshotscmd "github.com/jharrington22/aws-resource/cmd/list/snapshots"
 	volumescmd "github.com/jharrington22/aws-resource/cmd/list/volumes"
 	"github.com/jharrington22/aws-resource/cmd/whoami"
+	"github.com/jharrington22/aws-resource/pkg/arguments"
 	rprtr "github.com/jharrington22/aws-resource/pkg/reporter"
 	"github.com/spf13/cobra"
 )
@@ -48,7 +49,7 @@ func run(cmd *cobra.Command, args []string) (err error) {
 
 	reporter.Infof("Listing all resources")
 
-	if profile != "" || roleArn != "" {
+	if arguments.Profile != "" || arguments.RoleArn != "" {
 		err := whoami.WhoAmICmd.RunE(cmd, args)
 		if err != nil {
 			reporter.Errorf("Unable to verify AWS account %s", err)
@@ -95,8 +96,7 @@ func run(cmd *cobra.Command, args []string) (err error) {
 }
 
 func init() {
-
-	Cmd.Flags().BoolVar(&instanceNames, "instance-names", false, "Print instance names")
-	Cmd.Flags().StringVarP(&roleArn, "role-arn", "a", "", "AWS Role to assume")
-	Cmd.Flags().StringVarP(&profile, "profile", "p", "", "AWS Profile to use")
+	// Add global flags
+	flags := Cmd.Flags()
+	arguments.AddFlags(flags)
 }

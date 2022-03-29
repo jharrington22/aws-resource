@@ -40,6 +40,8 @@ func run(cmd *cobra.Command, args []string) (err error) {
 
 	awsClient, err := aws.NewClient().
 		Logger(logging).
+		Profile(arguments.Profile).
+		RoleArn(arguments.RoleArn).
 		Region(arguments.Region).
 		Build()
 
