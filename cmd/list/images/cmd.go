@@ -13,34 +13,31 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package snapshots
+package images
 
 import (
-	"fmt"
 	"os"
-	"strings"
 
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/jharrington22/aws-resource/pkg/arguments"
 	"github.com/jharrington22/aws-resource/pkg/aws"
 	logging "github.com/jharrington22/aws-resource/pkg/logging"
 	rprtr "github.com/jharrington22/aws-resource/pkg/reporter"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
 var (
-	snapshotId bool
-	startTime  bool
-	tags       bool
+	imageId string
 )
 
-// Cmd represents the snapshots command
+// Cmd represents the images command
 var Cmd = &cobra.Command{
-	Use:   "snapshots",
-	Short: "List EBS snapshots",
-	Long: `List EBS snapshots for all or a specific region
+	Use:   "images",
+	Short: "List AMIs",
+	Long: `List AMIs for all or a specific region
 
-aws-resource list snapshots`,
+aws-resource list images`,
 	RunE: run,
 }
 
@@ -49,7 +46,7 @@ func run(cmd *cobra.Command, args []string) (err error) {
 	reporter := rprtr.CreateReporterOrExit()
 	logging := logging.CreateLoggerOrExit(reporter)
 
-	reporter.Infof("Listing ebs snapshots")
+	reporter.Infof("Listing images")
 
 	awsClient, err := aws.NewClient().
 		Logger(logging).
@@ -69,7 +66,27 @@ func run(cmd *cobra.Command, args []string) (err error) {
 		return err
 	}
 
-	var availableSnapshots []*ec2.Snapshot
+	err = listAllImages(reporter, logging, regions)
+	if err != nil {
+		reporter.Errorf("Unable to delete image: %s", err)
+	}
+
+	return
+}
+
+func init() {
+	// Add global flags
+	flags := Cmd.Flags()
+	arguments.AddFlags(flags)
+	Cmd.Flags().StringVarP(&imageId, "image-id", "i", "", "Delete specific image id")
+}
+
+func listAllImages(reporter *rprtr.Object, logging *logrus.Logger, regions *ec2.DescribeRegionsOutput) error {
+
+	var allImages []*ec2.Image
+	var snapshotBackedImages []*ec2.Image
+	var allSnapshotBackedImages []*ec2.Image
+	var allSnapshots []*string
 	for _, region := range regions.Regions {
 
 		regionName := *region.RegionName
@@ -88,63 +105,39 @@ func run(cmd *cobra.Command, args []string) (err error) {
 
 		owner := "self"
 
-		input := &ec2.DescribeSnapshotsInput{
-			OwnerIds: []*string{&owner},
+		input := &ec2.DescribeImagesInput{
+			Owners: []*string{&owner},
 		}
 
-		var snapshots []*ec2.Snapshot
-		err = awsClient.DescribeSnapshotsPages(input, func(page *ec2.DescribeSnapshotsOutput, lastPage bool) bool {
-			snapshots = append(snapshots, page.Snapshots...)
-			return page.NextToken != nil
-		})
+		var images []*ec2.Image
+		output, err := awsClient.DescribeImages(input)
 		if err != nil {
-			reporter.Errorf("Unable to describe snapshots %s", err)
+			reporter.Errorf("Unable to describe images %s", err)
 			return err
 		}
 
-		for _, snapshot := range snapshots {
-			availableSnapshots = append(availableSnapshots, snapshot)
-			if snapshotId || startTime {
-				var detail []string
-				if snapshotId {
-					detail = append(detail, *snapshot.SnapshotId)
+		for _, image := range output.Images {
+			for _, bdm := range image.BlockDeviceMappings {
+				if bdm.Ebs != nil && bdm.Ebs.SnapshotId != nil {
+					allSnapshots = append(allSnapshots, bdm.Ebs.SnapshotId)
+					snapshotBackedImages = append(snapshotBackedImages, image)
+					allSnapshotBackedImages = append(allSnapshotBackedImages, image)
 				}
-				if startTime {
-					detail = append(detail, snapshot.StartTime.String())
-				}
-				if tags {
-					detail = append(detail, parseTags(snapshot.Tags)...)
-				}
-				reporter.Infof("Snapshot: %s", strings.Join(detail, ","))
+			}
+			allImages = append(allImages, image)
+			images = append(images, image)
+		}
+
+		if len(images) > 0 {
+			reporter.Infof("Found %d images in %s", len(images), regionName)
+			reporter.Infof("Found %d snapshot backed images in %s", len(images), regionName)
+			reporter.Infof("Snapshots:")
+			for _, s := range allSnapshots {
+				reporter.Infof("%s", *s)
 			}
 		}
 
-		if len(snapshots) > 0 {
-			reporter.Infof("Found %d snapshots in %s", len(snapshots), regionName)
-		}
 	}
 
-	if len(availableSnapshots) == 0 {
-		reporter.Infof("No snapshots found")
-	}
-
-	return
-
-}
-
-func init() {
-	// Add global flags
-	flags := Cmd.Flags()
-	arguments.AddFlags(flags)
-	Cmd.Flags().BoolVar(&startTime, "start-time", false, "Time stamp when the snapshot was initiated")
-	Cmd.Flags().BoolVar(&snapshotId, "snapshot-id", false, "The snapshot ID")
-	Cmd.Flags().BoolVar(&tags, "tags", false, "Tags")
-}
-
-func parseTags(tags []*ec2.Tag) []string {
-	var _tags []string
-	for k, v := range _tags {
-		_tags = append(_tags, fmt.Sprintf("%s: %s", k, v))
-	}
-	return _tags
+	return nil
 }

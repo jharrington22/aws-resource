@@ -27,7 +27,10 @@ import (
 )
 
 var (
+	imageId       bool
 	instanceNames bool
+	instanceType  bool
+	launchTime    bool
 )
 
 // Cmd represents the list command
@@ -86,14 +89,23 @@ func run(cmd *cobra.Command, args []string) (err error) {
 
 		result, err := awsClient.DescribeInstances(input)
 
-		var instanceNamesList []string
 		var runningInstanceList []*ec2.Instance
+		var detail []string
 		for _, r := range result.Reservations {
 			for _, i := range r.Instances {
 				if *i.State.Name == "running" {
 					runningInstanceList = append(runningInstanceList, i)
 					if instanceNames {
-						instanceNamesList = append(instanceNamesList, getInstanceName(i.Tags))
+						detail = append(detail, getInstanceName(i.Tags))
+					}
+					if launchTime {
+						detail = append(detail, i.LaunchTime.String())
+					}
+					if instanceType {
+						detail = append(detail, *i.InstanceType)
+					}
+					if imageId {
+						detail = append(detail, *i.ImageId)
 					}
 				}
 			}
@@ -102,9 +114,8 @@ func run(cmd *cobra.Command, args []string) (err error) {
 			instancesFound = true
 			reporter.Infof("Found %d running instances in %s", len(runningInstanceList), regionName)
 		}
-
-		if len(instanceNamesList) != 0 {
-			reporter.Infof("Instance names:\n%s", strings.Join(instanceNamesList, "\n"))
+		if (instanceNames || launchTime || instanceType) && len(detail) > 0 {
+			reporter.Infof("%s", strings.Join(detail, ", "))
 		}
 	}
 	if !instancesFound {
@@ -131,5 +142,8 @@ func init() {
 	flags := Cmd.Flags()
 	arguments.AddFlags(flags)
 
+	Cmd.Flags().BoolVar(&imageId, "image-id", false, "Print image id")
 	Cmd.Flags().BoolVar(&instanceNames, "instance-names", false, "Print instance names")
+	Cmd.Flags().BoolVar(&instanceType, "instance-type", false, "Print instance type")
+	Cmd.Flags().BoolVar(&launchTime, "launch-time", false, "Print instance launch time")
 }

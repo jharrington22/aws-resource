@@ -22,6 +22,7 @@ import (
 	"github.com/jharrington22/aws-resource/cmd/list/ec2"
 	"github.com/jharrington22/aws-resource/cmd/list/elb"
 	"github.com/jharrington22/aws-resource/cmd/list/elbv2"
+	"github.com/jharrington22/aws-resource/cmd/list/images"
 	"github.com/jharrington22/aws-resource/cmd/list/route53"
 	"github.com/jharrington22/aws-resource/cmd/list/snapshots"
 	"github.com/jharrington22/aws-resource/cmd/list/volumes"
@@ -35,6 +36,9 @@ var ListCmd = &cobra.Command{
 	Long: `List AWS resources
 aws-resource list ec2
 aws-resource list elb
+aws-resource list elbv2
+aws-resource list images
+aws-resource list route53
 aws-resource list snapshots
 aws-resource list volumes`,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -48,6 +52,7 @@ func init() {
 	ListCmd.AddCommand(ec2.Cmd)
 	ListCmd.AddCommand(elb.Cmd)
 	ListCmd.AddCommand(elbv2.Cmd)
+	ListCmd.AddCommand(images.Cmd)
 	ListCmd.AddCommand(route53.Cmd)
 	ListCmd.AddCommand(snapshots.Cmd)
 	ListCmd.AddCommand(volumes.Cmd)
