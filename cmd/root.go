@@ -18,6 +18,7 @@ package cmd
 import (
 	"os"
 
+	"github.com/jharrington22/aws-resource/cmd/del"
 	"github.com/jharrington22/aws-resource/cmd/list"
 	"github.com/jharrington22/aws-resource/cmd/whoami"
 	"github.com/jharrington22/aws-resource/pkg/arguments"
@@ -45,6 +46,7 @@ func Execute() {
 }
 
 func init() {
+	RootCmd.AddCommand(del.DelCmd)
 	RootCmd.AddCommand(list.ListCmd)
 	RootCmd.AddCommand(whoami.WhoAmICmd)
 	// Here you will define your flags and configuration settings.

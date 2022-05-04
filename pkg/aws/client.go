@@ -30,11 +30,15 @@ var (
 )
 
 type Client interface {
+	DeregisterImage(input *ec2.DeregisterImageInput) (*ec2.DeregisterImageOutput, error)
 	DescribeInstances(input *ec2.DescribeInstancesInput) (*ec2.DescribeInstancesOutput, error)
+	DescribeImages(input *ec2.DescribeImagesInput) (*ec2.DescribeImagesOutput, error)
 	DescribeLoadBalancers(input *elb.DescribeLoadBalancersInput) (*elb.DescribeLoadBalancersOutput, error)
 	DescribeV2LoadBalancers(input *elbv2.DescribeLoadBalancersInput) (*elbv2.DescribeLoadBalancersOutput, error)
 	DescribeRegions(input *ec2.DescribeRegionsInput) (*ec2.DescribeRegionsOutput, error)
 	DescribeSnapshots(input *ec2.DescribeSnapshotsInput) (*ec2.DescribeSnapshotsOutput, error)
+	DescribeSnapshotsPages(input *ec2.DescribeSnapshotsInput, fn func(*ec2.DescribeSnapshotsOutput, bool) bool) error
+	DeleteSnapshot(input *ec2.DeleteSnapshotInput) (*ec2.DeleteSnapshotOutput, error)
 	DescribeVolumes(input *ec2.DescribeVolumesInput) (*ec2.DescribeVolumesOutput, error)
 	GetCallerIdentity(input *sts.GetCallerIdentityInput) (*sts.GetCallerIdentityOutput, error)
 	ListHostedZonesByName(input *route53.ListHostedZonesByNameInput) (*route53.ListHostedZonesByNameOutput, error)
@@ -261,15 +265,70 @@ func (c *awsClient) DescribeSnapshots(input *ec2.DescribeSnapshotsInput) (*ec2.D
 			default:
 				return nil, aerr
 			}
-		} else {
-			// Print the error, cast err to awserr.Error to get the Code and
-			// Message from an error.
-			return nil, err
 		}
 		return nil, fmt.Errorf("describe snpshots failed, %s", err)
 	}
 
 	return result, nil
+}
+
+func (c *awsClient) DescribeSnapshotsPages(input *ec2.DescribeSnapshotsInput, fn func(*ec2.DescribeSnapshotsOutput, bool) bool) error {
+	err := c.ec2Client.DescribeSnapshotsPages(input, fn)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			default:
+				return aerr
+			}
+		}
+		return fmt.Errorf("describe snapshots failed, %s", err)
+	}
+	return nil
+}
+
+func (c *awsClient) DeleteSnapshot(input *ec2.DeleteSnapshotInput) (output *ec2.DeleteSnapshotOutput, err error) {
+	output, err = c.ec2Client.DeleteSnapshot(input)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			default:
+				return nil, aerr
+			}
+		} else {
+			return nil, fmt.Errorf("describe snapshots failed, %s", err)
+		}
+	}
+	return output, nil
+}
+
+func (c *awsClient) DescribeImages(input *ec2.DescribeImagesInput) (output *ec2.DescribeImagesOutput, err error) {
+	output, err = c.ec2Client.DescribeImages(input)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			default:
+				return nil, aerr
+			}
+		} else {
+			return nil, fmt.Errorf("describe images failed, %s", err)
+		}
+	}
+	return output, nil
+}
+
+func (c *awsClient) DeregisterImage(input *ec2.DeregisterImageInput) (output *ec2.DeregisterImageOutput, err error) {
+	output, err = c.ec2Client.DeregisterImage(input)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			default:
+				return nil, aerr
+			}
+		} else {
+			return nil, fmt.Errorf("deregister images failed, %s", err)
+		}
+	}
+	return output, nil
 }
 
 func (c *awsClient) DescribeVolumes(input *ec2.DescribeVolumesInput) (*ec2.DescribeVolumesOutput, error) {
