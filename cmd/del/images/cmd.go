@@ -149,7 +149,6 @@ func deleteAllImages(reporter *rprtr.Object, logging *logrus.Logger, regions *ec
 		for _, image := range output.Images {
 			allImages = append(allImages, image)
 			images = append(images, image)
-			fmt.Printf("Deregistering image %s\n", *image.ImageId)
 			input := &ec2.DeregisterImageInput{
 				DryRun:  &dryRun,
 				ImageId: image.ImageId,
