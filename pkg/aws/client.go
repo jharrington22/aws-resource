@@ -32,6 +32,7 @@ var (
 type Client interface {
 	DeregisterImage(input *ec2.DeregisterImageInput) (*ec2.DeregisterImageOutput, error)
 	DescribeInstances(input *ec2.DescribeInstancesInput) (*ec2.DescribeInstancesOutput, error)
+	DescribeInstancesPages(input *ec2.DescribeInstancesInput, fn func(*ec2.DescribeInstancesOutput, bool) bool) error
 	DescribeImages(input *ec2.DescribeImagesInput) (*ec2.DescribeImagesOutput, error)
 	DescribeLoadBalancers(input *elb.DescribeLoadBalancersInput) (*elb.DescribeLoadBalancersOutput, error)
 	DescribeV2LoadBalancers(input *elbv2.DescribeLoadBalancersInput) (*elbv2.DescribeLoadBalancersOutput, error)
@@ -42,6 +43,7 @@ type Client interface {
 	DescribeVolumes(input *ec2.DescribeVolumesInput) (*ec2.DescribeVolumesOutput, error)
 	GetCallerIdentity(input *sts.GetCallerIdentityInput) (*sts.GetCallerIdentityOutput, error)
 	ListHostedZonesByName(input *route53.ListHostedZonesByNameInput) (*route53.ListHostedZonesByNameOutput, error)
+	TerminateInstances(input *ec2.TerminateInstancesInput) (*ec2.TerminateInstancesOutput, error)
 }
 
 type ClientBuilder struct {
@@ -193,6 +195,27 @@ func (c *awsClient) DescribeInstances(input *ec2.DescribeInstancesInput) (*ec2.D
 	}
 
 	return result, nil
+
+}
+
+func (c *awsClient) DescribeInstancesPages(input *ec2.DescribeInstancesInput, fn func(*ec2.DescribeInstancesOutput, bool) bool) error {
+
+	err := c.ec2Client.DescribeInstancesPages(input, fn)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			default:
+				return aerr
+			}
+		} else {
+			// Print the error, cast err to awserr.Error to get the Code and
+			// Message from an error.
+			return err
+		}
+		return fmt.Errorf("describe instances pages failed, %s", err)
+	}
+
+	return nil
 
 }
 
@@ -383,7 +406,28 @@ func (c *awsClient) ListHostedZonesByName(input *route53.ListHostedZonesByNameIn
 			// Message from an error.
 			return nil, err
 		}
-		return nil, fmt.Errorf("describe instances failed, %s", err)
+		return nil, fmt.Errorf("describe hosted zones failed, %s", err)
+	}
+
+	return result, nil
+
+}
+
+func (c *awsClient) TerminateInstances(input *ec2.TerminateInstancesInput) (*ec2.TerminateInstancesOutput, error) {
+
+	result, err := c.ec2Client.TerminateInstances(input)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			default:
+				return nil, aerr
+			}
+		} else {
+			// Print the error, cast err to awserr.Error to get the Code and
+			// Message from an error.
+			return nil, err
+		}
+		return nil, fmt.Errorf("terminate instances failed, %s", err)
 	}
 
 	return result, nil
