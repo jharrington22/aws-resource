@@ -90,24 +90,26 @@ func run(cmd *cobra.Command, args []string) (err error) {
 		result, err := awsClient.DescribeInstances(input)
 
 		var runningInstanceList []*ec2.Instance
-		var detail []string
+		var detail [][]string
 		for _, r := range result.Reservations {
 			for _, i := range r.Instances {
+				var instanceDetail []string
 				if *i.State.Name == "running" {
 					runningInstanceList = append(runningInstanceList, i)
 					if instanceNames {
-						detail = append(detail, getInstanceName(i.Tags))
+						instanceDetail = append(instanceDetail, getInstanceName(i.Tags))
 					}
 					if launchTime {
-						detail = append(detail, i.LaunchTime.String())
+						instanceDetail = append(instanceDetail, i.LaunchTime.String())
 					}
 					if instanceType {
-						detail = append(detail, *i.InstanceType)
+						instanceDetail = append(instanceDetail, *i.InstanceType)
 					}
 					if imageId {
-						detail = append(detail, *i.ImageId)
+						instanceDetail = append(instanceDetail, *i.ImageId)
 					}
 				}
+				detail = append(detail, instanceDetail)
 			}
 		}
 		if len(runningInstanceList) > 0 {
@@ -115,7 +117,9 @@ func run(cmd *cobra.Command, args []string) (err error) {
 			reporter.Infof("Found %d running instances in %s", len(runningInstanceList), regionName)
 		}
 		if (instanceNames || launchTime || instanceType) && len(detail) > 0 {
-			reporter.Infof("%s", strings.Join(detail, ", "))
+			for _, d := range detail {
+				reporter.Infof("%s", strings.Join(d, ", "))
+			}
 		}
 	}
 	if !instancesFound {
