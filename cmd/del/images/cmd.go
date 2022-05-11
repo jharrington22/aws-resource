@@ -18,7 +18,6 @@ package images
 import (
 	"fmt"
 	"os"
-	"strconv"
 
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/jharrington22/aws-resource/pkg/arguments"
@@ -49,8 +48,6 @@ func run(cmd *cobra.Command, args []string) (err error) {
 	reporter := rprtr.CreateReporterOrExit()
 	logging := logging.CreateLoggerOrExit(reporter)
 
-	reporter.Infof("Delete images")
-
 	awsClient, err := aws.NewClient().
 		Logger(logging).
 		Profile(arguments.Profile).
@@ -63,8 +60,6 @@ func run(cmd *cobra.Command, args []string) (err error) {
 		return err
 	}
 
-	reporter.Infof("Dry run set to %s", strconv.FormatBool(dryRun))
-
 	regions, err := awsClient.DescribeRegions(&ec2.DescribeRegionsInput{})
 	if err != nil {
 		reporter.Errorf("Failed to describe regions")
@@ -72,7 +67,6 @@ func run(cmd *cobra.Command, args []string) (err error) {
 	}
 
 	if imageId != "" {
-		reporter.Infof("Image id specified: %s", imageId)
 		_, err := deleteImageId(awsClient, imageId, dryRun)
 		if err != nil {
 			reporter.Errorf("Unable to delete image: %s", err)
@@ -158,6 +152,8 @@ func deleteAllImages(reporter *rprtr.Object, logging *logrus.Logger, regions *ec
 			if err != nil {
 				return fmt.Errorf("Unable to deregister image: %s", err)
 			}
+			// Here we now can delete the backing snapshot by calling delete
+			// snapshot again
 
 			reporter.Infof("Image %s deregistered", imageId)
 		}
