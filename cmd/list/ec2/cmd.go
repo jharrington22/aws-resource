@@ -29,6 +29,7 @@ import (
 var (
 	imageId       bool
 	instanceNames bool
+	instanceIds   bool
 	instanceType  bool
 	launchTime    bool
 )
@@ -96,6 +97,9 @@ func run(cmd *cobra.Command, args []string) (err error) {
 				var instanceDetail []string
 				if *i.State.Name == "running" {
 					runningInstanceList = append(runningInstanceList, i)
+					if instanceIds {
+						instanceDetail = append(instanceDetail, *i.InstanceId)
+					}
 					if instanceNames {
 						instanceDetail = append(instanceDetail, getInstanceName(i.Tags))
 					}
@@ -147,6 +151,7 @@ func init() {
 	arguments.AddFlags(flags)
 
 	Cmd.Flags().BoolVar(&imageId, "image-id", false, "Print image id")
+	Cmd.Flags().BoolVar(&instanceIds, "instance-ids", false, "Print instance id")
 	Cmd.Flags().BoolVar(&instanceNames, "instance-names", false, "Print instance names")
 	Cmd.Flags().BoolVar(&instanceType, "instance-type", false, "Print instance type")
 	Cmd.Flags().BoolVar(&launchTime, "launch-time", false, "Print instance launch time")
