@@ -84,12 +84,25 @@ func run(cmd *cobra.Command, args []string) (err error) {
 		}
 
 		var volumes []*ec2.Volume
+		var attachedVolumes []*ec2.Volume
+		var unattachedVolumes []*ec2.Volume
 		for _, volume := range result.Volumes {
 			volumes = append(volumes, volume)
 			availableVolumes = append(availableVolumes, volume)
+			if len(volume.Attachments) > 0 {
+				attachedVolumes = append(attachedVolumes, volume)
+			} else {
+				unattachedVolumes = append(unattachedVolumes, volume)
+			}
 		}
 		if len(volumes) > 0 {
 			reporter.Infof("Found %d volumes in %s", len(volumes), regionName)
+		}
+		if len(volumes) > 0 {
+			reporter.Infof("%d attached volumes in %s", len(attachedVolumes), regionName)
+		}
+		if len(volumes) > 0 {
+			reporter.Infof("%d unattached volumes in %s", len(unattachedVolumes), regionName)
 		}
 	}
 	if len(availableVolumes) == 0 {
