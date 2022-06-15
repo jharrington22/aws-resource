@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/jharrington22/aws-resource/cmd/del/ec2"
+	"github.com/jharrington22/aws-resource/cmd/del/elb"
 	"github.com/jharrington22/aws-resource/cmd/del/images"
 	"github.com/jharrington22/aws-resource/cmd/del/snapshots"
 	"github.com/spf13/cobra"
@@ -38,6 +39,7 @@ aws-resource delete snapshots`,
 func init() {
 
 	DelCmd.AddCommand(ec2.Cmd)
+	DelCmd.AddCommand(elb.Cmd)
 	DelCmd.AddCommand(images.Cmd)
 	DelCmd.AddCommand(snapshots.Cmd)
 
