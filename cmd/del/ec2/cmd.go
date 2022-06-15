@@ -30,13 +30,13 @@ var (
 	dryRun bool
 )
 
-// Cmd represents the list command
+// Cmd represents the delete command
 var Cmd = &cobra.Command{
 	Use:   "ec2",
 	Short: "Delete EC2 instances",
 	Long: `Delete EC2 instances for all or a specific region
 
-aws-resource list ec2`,
+aws-resource delete ec2`,
 	RunE: run,
 }
 
