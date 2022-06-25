@@ -67,6 +67,7 @@ func run(cmd *cobra.Command, args []string) (err error) {
 
 	var runningLoadBalancerDescriptionsList []*elb.LoadBalancerDescription
 	var deletedLoadBalancerDescriptionsList []*elb.LoadBalancerDescription
+	var loadBalancerDescriptions []*elb.LoadBalancerDescription
 	if allRegions {
 		for _, region := range regions.Regions {
 
@@ -86,7 +87,6 @@ func run(cmd *cobra.Command, args []string) (err error) {
 
 			input := &elb.DescribeLoadBalancersInput{}
 
-			var loadBalancerDescriptions []*elb.LoadBalancerDescription
 			err = awsClient.DescribeLoadBalancersPages(input, func(page *elb.DescribeLoadBalancersOutput, lastPage bool) bool {
 				loadBalancerDescriptions = append(loadBalancerDescriptions, page.LoadBalancerDescriptions...)
 				return !lastPage
