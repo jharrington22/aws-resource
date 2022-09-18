@@ -54,14 +54,12 @@ func run(cmd *cobra.Command, args []string) (err error) {
 		Build()
 
 	if err != nil {
-		reporter.Errorf("Unable to build AWS client")
-		return err
+		return reporter.Errorf("Unable to build AWS client")
 	}
 
 	regions, err := awsClient.DescribeRegions(&ec2.DescribeRegionsInput{})
 	if err != nil {
-		reporter.Errorf("Failed to describe regions; %s", err)
-		return err
+		return reporter.Errorf("Failed to describe regions; %s", err)
 	}
 
 	var instancesFound bool
@@ -78,8 +76,7 @@ func run(cmd *cobra.Command, args []string) (err error) {
 			Build()
 
 		if err != nil {
-			reporter.Errorf("Unable to build AWS client in %s", regionName)
-			return err
+			return reporter.Errorf("Unable to build AWS client in %s", regionName)
 		}
 
 		input := &ec2.DescribeInstancesInput{}
@@ -92,7 +89,7 @@ func run(cmd *cobra.Command, args []string) (err error) {
 			return !lastPage
 		})
 		if err != nil {
-			reporter.Errorf("Unable to describe instance pages %s", err)
+			return reporter.Errorf("Unable to describe instance pages %s", err)
 		}
 
 		var runningInstanceList []*ec2.Instance
@@ -110,7 +107,7 @@ func run(cmd *cobra.Command, args []string) (err error) {
 			}
 			output, err := terminateInstances(awsClient, instanceIds, dryRun)
 			if err != nil {
-				reporter.Errorf("Could not terminate instances: %s", err)
+				return reporter.Errorf("Could not terminate instances: %s", err)
 			}
 			deletedInstancesList := []string{}
 			// The TerminatingInstances slice will be nil if dryRun is set
@@ -122,7 +119,7 @@ func run(cmd *cobra.Command, args []string) (err error) {
 				reporter.Infof("Instance ID deleted %s", strings.Join(deletedInstancesList, ","))
 			}
 			if len(runningInstanceList) != len(deletedInstancesList) {
-				reporter.Errorf("Number of deleted instance IDs %d does not match number of running instances %d in %s",
+				_ = reporter.Errorf("Number of deleted instance IDs %d does not match number of running instances %d in %s",
 					len(deletedInstancesList), len(runningInstanceList), regionName)
 			}
 		}

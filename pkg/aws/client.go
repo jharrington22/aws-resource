@@ -131,11 +131,12 @@ func (b *ClientBuilder) Build() (Client, error) {
 	// Create the AWS session:
 	if b.credentials != nil {
 		sess, err = b.BuildSessionWithOptionsCredentials(b.credentials)
-	}
-	if b.profile != nil && *b.profile != "" {
-		sess, err = b.BuildSessionWithProfileOptions()
 	} else {
-		sess, err = b.BuildSessionWithOptions()
+		if b.profile != nil && *b.profile != "" {
+			sess, err = b.BuildSessionWithProfileOptions()
+		} else {
+			sess, err = b.BuildSessionWithOptions()
+		}
 	}
 	if err != nil {
 		return nil, err
@@ -186,10 +187,6 @@ func (c *awsClient) DescribeInstances(input *ec2.DescribeInstancesInput) (*ec2.D
 			default:
 				return nil, aerr
 			}
-		} else {
-			// Print the error, cast err to awserr.Error to get the Code and
-			// Message from an error.
-			return nil, err
 		}
 		return nil, fmt.Errorf("describe instances failed, %s", err)
 	}
@@ -207,10 +204,6 @@ func (c *awsClient) DescribeInstancesPages(input *ec2.DescribeInstancesInput, fn
 			default:
 				return aerr
 			}
-		} else {
-			// Print the error, cast err to awserr.Error to get the Code and
-			// Message from an error.
-			return err
 		}
 		return fmt.Errorf("describe instances pages failed, %s", err)
 	}
@@ -228,10 +221,6 @@ func (c *awsClient) DescribeLoadBalancers(input *elb.DescribeLoadBalancersInput)
 			default:
 				return nil, aerr
 			}
-		} else {
-			// Print the error, cast err to awserr.Error to get the Code and
-			// Message from an error.
-			return nil, err
 		}
 		return nil, fmt.Errorf("describe load balancers failed, %s", err)
 	}
@@ -249,10 +238,6 @@ func (c *awsClient) DescribeV2LoadBalancers(input *elbv2.DescribeLoadBalancersIn
 			default:
 				return nil, aerr
 			}
-		} else {
-			// Print the error, cast err to awserr.Error to get the Code and
-			// Message from an error.
-			return nil, err
 		}
 		return nil, fmt.Errorf("describe v2 load balancers failed, %s", err)
 	}
@@ -269,10 +254,6 @@ func (c *awsClient) DescribeRegions(input *ec2.DescribeRegionsInput) (*ec2.Descr
 			default:
 				return nil, aerr
 			}
-		} else {
-			// Print the error, cast err to awserr.Error to get the Code and
-			// Message from an error.
-			return nil, err
 		}
 		return nil, fmt.Errorf("describe regions failed, %s", err)
 	}
@@ -362,10 +343,6 @@ func (c *awsClient) DescribeVolumes(input *ec2.DescribeVolumesInput) (*ec2.Descr
 			default:
 				return nil, aerr
 			}
-		} else {
-			// Print the error, cast err to awserr.Error to get the Code and
-			// Message from an error.
-			return nil, err
 		}
 		return nil, fmt.Errorf("describe volumes failed, %s", err)
 	}
@@ -381,10 +358,6 @@ func (c *awsClient) GetCallerIdentity(input *sts.GetCallerIdentityInput) (*sts.G
 			default:
 				return nil, aerr
 			}
-		} else {
-			// Print the error, cast err to awserr.Error to get the Code and
-			// Message from an error.
-			return nil, err
 		}
 		return nil, fmt.Errorf("getting sts caller identity failed, %s", err)
 	}
@@ -401,10 +374,6 @@ func (c *awsClient) ListHostedZonesByName(input *route53.ListHostedZonesByNameIn
 			default:
 				return nil, aerr
 			}
-		} else {
-			// Print the error, cast err to awserr.Error to get the Code and
-			// Message from an error.
-			return nil, err
 		}
 		return nil, fmt.Errorf("describe hosted zones failed, %s", err)
 	}
@@ -422,10 +391,6 @@ func (c *awsClient) TerminateInstances(input *ec2.TerminateInstancesInput) (*ec2
 			default:
 				return nil, aerr
 			}
-		} else {
-			// Print the error, cast err to awserr.Error to get the Code and
-			// Message from an error.
-			return nil, err
 		}
 		return nil, fmt.Errorf("terminate instances failed, %s", err)
 	}

@@ -28,12 +28,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	instanceNames bool
-	profile       string
-	roleArn       string
-)
-
 // Cmd represents the list command
 var Cmd = &cobra.Command{
 	Use:   "all",
@@ -52,44 +46,38 @@ func run(cmd *cobra.Command, args []string) (err error) {
 	if arguments.Profile != "" || arguments.RoleArn != "" {
 		err := whoami.WhoAmICmd.RunE(cmd, args)
 		if err != nil {
-			reporter.Errorf("Unable to verify AWS account %s", err)
+			return reporter.Errorf("Unable to verify AWS account %s", err)
 		}
 	}
 
 	err = ec2cmd.Cmd.RunE(cmd, args)
 	if err != nil {
-		reporter.Errorf("Unable to list EC2 instances: %s", err)
-		return err
+		return reporter.Errorf("Unable to list EC2 instances: %s", err)
 	}
 
 	err = elbcmd.Cmd.RunE(cmd, args)
 	if err != nil {
-		reporter.Errorf("Unable to list ELB instances: %s", err)
-		return err
+		return reporter.Errorf("Unable to list ELB instances: %s", err)
 	}
 
 	err = elbv2cmd.Cmd.RunE(cmd, args)
 	if err != nil {
-		reporter.Errorf("Unable to list ELB V2 instances: %s", err)
-		return err
+		return reporter.Errorf("Unable to list ELB V2 instances: %s", err)
 	}
 
 	err = route53cmd.Cmd.RunE(cmd, args)
 	if err != nil {
-		reporter.Errorf("Unable to list route53 hosted zones: %s", err)
-		return err
+		return reporter.Errorf("Unable to list route53 hosted zones: %s", err)
 	}
 
 	err = snapshotscmd.Cmd.RunE(cmd, args)
 	if err != nil {
-		reporter.Errorf("Unable to list snapshots: %s", err)
-		return err
+		return reporter.Errorf("Unable to list snapshots: %s", err)
 	}
 
 	err = volumescmd.Cmd.RunE(cmd, args)
 	if err != nil {
-		reporter.Errorf("Unable to list volumes: %s", err)
-		return err
+		return reporter.Errorf("Unable to list volumes: %s", err)
 	}
 
 	return

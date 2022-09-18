@@ -49,8 +49,7 @@ func run(cmd *cobra.Command, args []string) (err error) {
 		Build()
 
 	if err != nil {
-		reporter.Errorf("Unable to build AWS client")
-		return err
+		return reporter.Errorf("Unable to build AWS client")
 	}
 
 	input := &route53.ListHostedZonesByNameInput{}
@@ -58,9 +57,7 @@ func run(cmd *cobra.Command, args []string) (err error) {
 	result, err := awsClient.ListHostedZonesByName(input)
 
 	var hostedZones []*route53.HostedZone
-	for _, hostedZone := range result.HostedZones {
-		hostedZones = append(hostedZones, hostedZone)
-	}
+	hostedZones = append(hostedZones, result.HostedZones...)
 
 	if len(hostedZones) > 0 {
 		reporter.Infof("Found %d hosted zones", len(hostedZones))
