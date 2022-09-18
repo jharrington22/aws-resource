@@ -21,6 +21,7 @@ import (
 	"github.com/jharrington22/aws-resource/cmd/del/ec2"
 	"github.com/jharrington22/aws-resource/cmd/del/images"
 	"github.com/jharrington22/aws-resource/cmd/del/snapshots"
+	"github.com/jharrington22/aws-resource/cmd/del/subnets"
 	"github.com/spf13/cobra"
 )
 
@@ -40,5 +41,6 @@ func init() {
 	DelCmd.AddCommand(ec2.Cmd)
 	DelCmd.AddCommand(images.Cmd)
 	DelCmd.AddCommand(snapshots.Cmd)
+	DelCmd.AddCommand(subnets.Cmd)
 
 }
