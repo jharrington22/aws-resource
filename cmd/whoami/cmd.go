@@ -46,13 +46,13 @@ func run(cmd *cobra.Command, args []string) (err error) {
 		Build()
 
 	if err != nil {
-		reporter.Errorf("Unable to build AWS client")
+		_ = reporter.Errorf("Unable to build AWS client")
 		os.Exit(1)
 	}
 
 	identity, err := awsClient.GetCallerIdentity(&sts.GetCallerIdentityInput{})
 	if err != nil {
-		reporter.Errorf("Error %s", err)
+		_ = reporter.Errorf("Error %s", err)
 		os.Exit(1)
 	}
 

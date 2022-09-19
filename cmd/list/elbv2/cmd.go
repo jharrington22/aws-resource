@@ -50,14 +50,12 @@ func run(cmd *cobra.Command, args []string) (err error) {
 		Build()
 
 	if err != nil {
-		reporter.Errorf("Unable to build AWS client")
-		return err
+		return reporter.Errorf("Unable to build AWS client")
 	}
 
 	regions, err := awsClient.DescribeRegions(&ec2.DescribeRegionsInput{})
 	if err != nil {
-		reporter.Errorf("Failed to describe regions")
-		return err
+		return reporter.Errorf("Failed to describe regions")
 	}
 
 	var runningLoadBalancersV2DescriptionsList []*elbv2.LoadBalancer
@@ -73,13 +71,15 @@ func run(cmd *cobra.Command, args []string) (err error) {
 			Build()
 
 		if err != nil {
-			reporter.Errorf("Unable to build AWS client in %s", regionName)
-			return err
+			return reporter.Errorf("Unable to build AWS client in %s", regionName)
 		}
 
 		input := &elbv2.DescribeLoadBalancersInput{}
 
 		result, err := awsClient.DescribeV2LoadBalancers(input)
+		if err != nil {
+			return reporter.Errorf("Unable to describe load balancers v2: %s", err)
+		}
 
 		var loadBalancersV2 []*elbv2.LoadBalancer
 		for _, loadBalancerV2 := range result.LoadBalancers {

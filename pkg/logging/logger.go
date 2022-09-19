@@ -15,7 +15,7 @@ import (
 type LoggerBuilder struct {
 }
 
-// NewLogger creates new builder that can then be used to configure and build an OCM logger that
+// NewLogger creates new builder that can then be used to configure and build an logger that
 // uses the logging framework of the project.
 func NewLogger() *LoggerBuilder {
 	return &LoggerBuilder{}
@@ -44,7 +44,7 @@ func CreateLoggerOrExit(reporter *rprtr.Object) *logrus.Logger {
 	// Create the logger:
 	logger, err := NewLogger().Build()
 	if err != nil {
-		reporter.Errorf("Failed to create logger: %v", err)
+		_ = reporter.Errorf("Failed to create logger: %v", err)
 		os.Exit(1)
 	}
 	return logger

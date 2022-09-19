@@ -59,14 +59,12 @@ func run(cmd *cobra.Command, args []string) (err error) {
 		Build()
 
 	if err != nil {
-		reporter.Errorf("Unable to build AWS client")
-		return err
+		return reporter.Errorf("Unable to build AWS client")
 	}
 
 	regions, err := awsClient.DescribeRegions(&ec2.DescribeRegionsInput{})
 	if err != nil {
-		reporter.Errorf("Failed to describe regions")
-		return err
+		return reporter.Errorf("Failed to describe regions")
 	}
 
 	var availableSnapshots []*ec2.Snapshot
@@ -82,7 +80,7 @@ func run(cmd *cobra.Command, args []string) (err error) {
 			Build()
 
 		if err != nil {
-			reporter.Errorf("Unable to build AWS client in %s", regionName)
+			_ = reporter.Errorf("Unable to build AWS client in %s", regionName)
 			os.Exit(1)
 		}
 
@@ -98,8 +96,7 @@ func run(cmd *cobra.Command, args []string) (err error) {
 			return page.NextToken != nil
 		})
 		if err != nil {
-			reporter.Errorf("Unable to describe snapshots %s", err)
-			return err
+			return reporter.Errorf("Unable to describe snapshots %s", err)
 		}
 
 		for _, snapshot := range snapshots {
@@ -144,7 +141,7 @@ func init() {
 func parseTags(tags []*ec2.Tag) []string {
 	var _tags []string
 	for k, v := range _tags {
-		_tags = append(_tags, fmt.Sprintf("%s: %s", k, v))
+		_tags = append(_tags, fmt.Sprintf("%v: %s", k, v))
 	}
 	return _tags
 }

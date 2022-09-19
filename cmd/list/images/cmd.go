@@ -56,19 +56,17 @@ func run(cmd *cobra.Command, args []string) (err error) {
 		Build()
 
 	if err != nil {
-		reporter.Errorf("Unable to build AWS client")
-		return err
+		return reporter.Errorf("Unable to build AWS client")
 	}
 
 	regions, err := awsClient.DescribeRegions(&ec2.DescribeRegionsInput{})
 	if err != nil {
-		reporter.Errorf("Failed to describe regions")
-		return err
+		return reporter.Errorf("Failed to describe regions")
 	}
 
 	err = listAllImages(reporter, logging, regions)
 	if err != nil {
-		reporter.Errorf("Unable to delete image: %s", err)
+		_ = reporter.Errorf("Unable to delete image: %s", err)
 	}
 
 	return
@@ -83,9 +81,6 @@ func init() {
 
 func listAllImages(reporter *rprtr.Object, logging *logrus.Logger, regions *ec2.DescribeRegionsOutput) error {
 
-	var allImages []*ec2.Image
-	var snapshotBackedImages []*ec2.Image
-	var allSnapshotBackedImages []*ec2.Image
 	var allSnapshots []*string
 	for _, region := range regions.Regions {
 
@@ -99,7 +94,7 @@ func listAllImages(reporter *rprtr.Object, logging *logrus.Logger, regions *ec2.
 			Build()
 
 		if err != nil {
-			reporter.Errorf("Unable to build AWS client in %s", regionName)
+			_ = reporter.Errorf("Unable to build AWS client in %s", regionName)
 			os.Exit(1)
 		}
 
@@ -112,19 +107,15 @@ func listAllImages(reporter *rprtr.Object, logging *logrus.Logger, regions *ec2.
 		var images []*ec2.Image
 		output, err := awsClient.DescribeImages(input)
 		if err != nil {
-			reporter.Errorf("Unable to describe images %s", err)
-			return err
+			return reporter.Errorf("Unable to describe images %s", err)
 		}
 
 		for _, image := range output.Images {
 			for _, bdm := range image.BlockDeviceMappings {
 				if bdm.Ebs != nil && bdm.Ebs.SnapshotId != nil {
 					allSnapshots = append(allSnapshots, bdm.Ebs.SnapshotId)
-					snapshotBackedImages = append(snapshotBackedImages, image)
-					allSnapshotBackedImages = append(allSnapshotBackedImages, image)
 				}
 			}
-			allImages = append(allImages, image)
 			images = append(images, image)
 		}
 

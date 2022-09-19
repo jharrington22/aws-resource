@@ -48,14 +48,12 @@ func run(cmd *cobra.Command, args []string) (err error) {
 		Build()
 
 	if err != nil {
-		reporter.Errorf("Unable to build AWS client")
-		return err
+		return reporter.Errorf("Unable to build AWS client")
 	}
 
 	regions, err := awsClient.DescribeRegions(&ec2.DescribeRegionsInput{})
 	if err != nil {
-		reporter.Errorf("Failed to describe regions")
-		return err
+		return reporter.Errorf("Failed to describe regions")
 	}
 
 	var availableVolumes []*ec2.Volume
@@ -71,16 +69,14 @@ func run(cmd *cobra.Command, args []string) (err error) {
 			Build()
 
 		if err != nil {
-			reporter.Errorf("Unable to build AWS client in %s", regionName)
-			return err
+			return reporter.Errorf("Unable to build AWS client in %s", regionName)
 		}
 
 		input := &ec2.DescribeVolumesInput{}
 
 		result, err := awsClient.DescribeVolumes(input)
 		if err != nil {
-			reporter.Errorf("Unable to describe volumes %s", err)
-			return err
+			return reporter.Errorf("Unable to describe volumes %s", err)
 		}
 
 		var volumes []*ec2.Volume

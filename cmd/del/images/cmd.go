@@ -56,20 +56,18 @@ func run(cmd *cobra.Command, args []string) (err error) {
 		Build()
 
 	if err != nil {
-		reporter.Errorf("Unable to build AWS client")
-		return err
+		return reporter.Errorf("Unable to build AWS client")
 	}
 
 	regions, err := awsClient.DescribeRegions(&ec2.DescribeRegionsInput{})
 	if err != nil {
-		reporter.Errorf("Failed to describe regions")
-		return err
+		return reporter.Errorf("Failed to describe regions")
 	}
 
 	if imageId != "" {
 		_, err := deleteImageId(awsClient, imageId, dryRun)
 		if err != nil {
-			reporter.Errorf("Unable to delete image: %s", err)
+			_ = reporter.Errorf("Unable to delete image: %s", err)
 		}
 		reporter.Infof("Image %s deregistered", imageId)
 	}
@@ -78,7 +76,7 @@ func run(cmd *cobra.Command, args []string) (err error) {
 		reporter.Infof("No image id specified")
 		err := deleteAllImages(reporter, logging, regions, dryRun)
 		if err != nil {
-			reporter.Errorf("Unable to delete image: %s", err)
+			_ = reporter.Errorf("Unable to delete image: %s", err)
 		}
 	}
 
@@ -110,7 +108,6 @@ func deleteImageId(client aws.Client, imageId string, dryRun bool) (*ec2.Deregis
 
 func deleteAllImages(reporter *rprtr.Object, logging *logrus.Logger, regions *ec2.DescribeRegionsOutput, dryRun bool) error {
 
-	var allImages []*ec2.Image
 	for _, region := range regions.Regions {
 
 		regionName := *region.RegionName
@@ -123,7 +120,7 @@ func deleteAllImages(reporter *rprtr.Object, logging *logrus.Logger, regions *ec
 			Build()
 
 		if err != nil {
-			reporter.Errorf("Unable to build AWS client in %s", regionName)
+			_ = reporter.Errorf("Unable to build AWS client in %s", regionName)
 			os.Exit(1)
 		}
 
@@ -136,12 +133,10 @@ func deleteAllImages(reporter *rprtr.Object, logging *logrus.Logger, regions *ec
 		var images []*ec2.Image
 		output, err := awsClient.DescribeImages(input)
 		if err != nil {
-			reporter.Errorf("Unable to describe images %s", err)
-			return err
+			return reporter.Errorf("Unable to describe images %s", err)
 		}
 
 		for _, image := range output.Images {
-			allImages = append(allImages, image)
 			images = append(images, image)
 			input := &ec2.DeregisterImageInput{
 				DryRun:  &dryRun,

@@ -64,8 +64,7 @@ func run(cmd *cobra.Command, args []string) (err error) {
 		Build()
 
 	if err != nil {
-		reporter.Errorf("Unable to build AWS client")
-		return err
+		return reporter.Errorf("Unable to build AWS client")
 	}
 
 	if !dryRun {
@@ -77,8 +76,7 @@ func run(cmd *cobra.Command, args []string) (err error) {
 		reporter.Infof("Deleting ebs snapshots in all regions")
 		regions, err := awsClient.DescribeRegions(&ec2.DescribeRegionsInput{})
 		if err != nil {
-			reporter.Errorf("Failed to describe regions")
-			return err
+			return reporter.Errorf("Failed to describe regions")
 		}
 
 		for _, region := range regions.Regions {
@@ -90,20 +88,18 @@ func run(cmd *cobra.Command, args []string) (err error) {
 				Build()
 
 			if err != nil {
-				reporter.Errorf("Unable to build AWS client for region: %s: %s", *region.RegionName, err)
+				_ = reporter.Errorf("Unable to build AWS client for region: %s: %s", *region.RegionName, err)
 			}
 
 			ss, err := describeSnapshots(awsClient, reporter)
 			if err != nil {
-				reporter.Errorf("Unable to describe snapshots for region %s: err", *region.RegionName)
-				return err
+				return reporter.Errorf("Unable to describe snapshots for region %s: err", *region.RegionName)
 			}
 			snapshots = append(snapshots, ss...)
 			for _, s := range ss {
-				deleteSnapshot(awsClient, cmd, reporter, s, dryRun)
+				err = deleteSnapshot(awsClient, cmd, reporter, s, dryRun)
 				if err != nil {
-					fmt.Errorf("Unable to delete shapshot: %s", err)
-					return err
+					return fmt.Errorf("Unable to delete shapshot: %s", err)
 				}
 				reporter.Infof("Deleted snapshot %s", *s.SnapshotId)
 
@@ -118,15 +114,13 @@ func run(cmd *cobra.Command, args []string) (err error) {
 		})
 
 		if err != nil {
-			reporter.Errorf("Unable to describe snapshot id: %s", snapshotId)
-			return err
+			return reporter.Errorf("Unable to describe snapshot id: %s", snapshotId)
 		}
 		snapshots = append(snapshots, snapshot.Snapshots...)
 		for _, s := range snapshot.Snapshots {
-			deleteSnapshot(awsClient, cmd, reporter, s, dryRun)
+			err = deleteSnapshot(awsClient, cmd, reporter, s, dryRun)
 			if err != nil {
-				fmt.Errorf("Unable to delete shapshot: %s", err)
-				return err
+				return fmt.Errorf("Unable to delete shapshot: %s", err)
 			}
 			reporter.Infof("Deleted snapshot %s", *s.SnapshotId)
 		}
@@ -139,8 +133,7 @@ func run(cmd *cobra.Command, args []string) (err error) {
 		reporter.Infof("Deleting ebs snapshots in %s", arguments.Region)
 		snapshots, err = describeSnapshots(awsClient, reporter)
 		if err != nil {
-			reporter.Errorf("Unable to describe snapshots for region %s", arguments.Region)
-			return err
+			return reporter.Errorf("Unable to describe snapshots for region %s", arguments.Region)
 		}
 	}
 
@@ -190,25 +183,23 @@ func deleteSnapshot(awsClient aws.Client, cmd *cobra.Command, reporter *rprtr.Ob
 			reporter.Infof("Snapshot in use with backing AMI use --delete-backing-image to force delete: %s", aerr.Message())
 			amiId, err := parseInUseSnapshotImageIdErr(aerr.Message())
 			if err != nil {
-				reporter.Errorf("Parsing of snapshot (%s) in use error: %v", *snapshot.SnapshotId, err)
-				return err
+				return reporter.Errorf("Parsing of snapshot (%s) in use error: %v", *snapshot.SnapshotId, err)
 			}
 			if deleteBackingImage {
 				flags := images.Cmd.Flags()
 				// Setting image ID for deletion
 				err = flags.Set("image-id", amiId)
 				if err != nil {
-					reporter.Errorf("Unable to set image flag: %s", err)
+					_ = reporter.Errorf("Unable to set image flag: %s", err)
 				}
 				// Setting dry-run flag if specified
 				err = flags.Set("dry-run", strconv.FormatBool(dryRun))
 				if err != nil {
-					reporter.Errorf("Unable to set dry run flag: %s", err)
+					_ = reporter.Errorf("Unable to set dry run flag: %s", err)
 				}
 				err = images.Cmd.RunE(cmd, []string{})
 				if err != nil {
-					reporter.Errorf("Unable to list EC2 instances: %s", err)
-					return err
+					return reporter.Errorf("Unable to list EC2 instances: %s", err)
 				}
 				_, err = awsClient.DeleteSnapshot(input)
 				if err != nil {
@@ -222,13 +213,11 @@ func deleteSnapshot(awsClient aws.Client, cmd *cobra.Command, reporter *rprtr.Ob
 			reporter.Infof("deletion of %s in %s", *snapshot.SnapshotId, aerr.Message())
 			return nil
 		default:
-			reporter.Errorf("error %s", err)
-			return err
+			return reporter.Errorf("error %s", err)
 
 		}
 	} else {
-		reporter.Errorf("Delete snapshot failed: %s", err)
-		return err
+		return reporter.Errorf("Delete snapshot failed: %s", err)
 
 	}
 	return nil
@@ -247,8 +236,7 @@ func describeSnapshots(awsClient aws.Client, reporter *rprtr.Object) ([]*ec2.Sna
 		return !lastPage
 	})
 	if err != nil {
-		reporter.Errorf("Unable to describe snapshots %s", err)
-		return nil, err
+		return nil, reporter.Errorf("Unable to describe snapshots %s", err)
 	}
 	return snapshots, err
 }
