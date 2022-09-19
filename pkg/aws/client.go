@@ -35,10 +35,12 @@ type Client interface {
 	DescribeInstancesPages(input *ec2.DescribeInstancesInput, fn func(*ec2.DescribeInstancesOutput, bool) bool) error
 	DescribeImages(input *ec2.DescribeImagesInput) (*ec2.DescribeImagesOutput, error)
 	DescribeLoadBalancers(input *elb.DescribeLoadBalancersInput) (*elb.DescribeLoadBalancersOutput, error)
+	DescribeLoadBalancersPages(input *elb.DescribeLoadBalancersInput, fn func(*elb.DescribeLoadBalancersOutput, bool) bool) error
 	DescribeV2LoadBalancers(input *elbv2.DescribeLoadBalancersInput) (*elbv2.DescribeLoadBalancersOutput, error)
 	DescribeRegions(input *ec2.DescribeRegionsInput) (*ec2.DescribeRegionsOutput, error)
 	DescribeSnapshots(input *ec2.DescribeSnapshotsInput) (*ec2.DescribeSnapshotsOutput, error)
 	DescribeSnapshotsPages(input *ec2.DescribeSnapshotsInput, fn func(*ec2.DescribeSnapshotsOutput, bool) bool) error
+	DeleteLoadBalancer(input *elb.DeleteLoadBalancerInput) (*elb.DeleteLoadBalancerOutput, error)
 	DeleteSnapshot(input *ec2.DeleteSnapshotInput) (*ec2.DeleteSnapshotOutput, error)
 	DescribeVolumes(input *ec2.DescribeVolumesInput) (*ec2.DescribeVolumesOutput, error)
 	GetCallerIdentity(input *sts.GetCallerIdentityInput) (*sts.GetCallerIdentityOutput, error)
@@ -229,6 +231,27 @@ func (c *awsClient) DescribeLoadBalancers(input *elb.DescribeLoadBalancersInput)
 
 }
 
+func (c *awsClient) DescribeLoadBalancersPages(input *elb.DescribeLoadBalancersInput, fn func(*elb.DescribeLoadBalancersOutput, bool) bool) error {
+
+	err := c.elbClient.DescribeLoadBalancersPages(input, fn)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			default:
+				return aerr
+			}
+		} else {
+			// Print the error, cast err to awserr.Error to get the Code and
+			// Message from an error.
+			return err
+		}
+		return fmt.Errorf("describe load balancers failed, %s", err)
+	}
+
+	return nil
+
+}
+
 func (c *awsClient) DescribeV2LoadBalancers(input *elbv2.DescribeLoadBalancersInput) (*elbv2.DescribeLoadBalancersOutput, error) {
 
 	result, err := c.elbV2Client.DescribeLoadBalancers(input)
@@ -288,6 +311,21 @@ func (c *awsClient) DescribeSnapshotsPages(input *ec2.DescribeSnapshotsInput, fn
 		return fmt.Errorf("describe snapshots failed, %s", err)
 	}
 	return nil
+}
+
+func (c *awsClient) DeleteLoadBalancer(input *elb.DeleteLoadBalancerInput) (output *elb.DeleteLoadBalancerOutput, err error) {
+	output, err = c.elbClient.DeleteLoadBalancer(input)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			default:
+				return nil, aerr
+			}
+		} else {
+			return nil, fmt.Errorf("delete load balancer failed, %s", err)
+		}
+	}
+	return output, nil
 }
 
 func (c *awsClient) DeleteSnapshot(input *ec2.DeleteSnapshotInput) (output *ec2.DeleteSnapshotOutput, err error) {
