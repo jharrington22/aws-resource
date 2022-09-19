@@ -43,6 +43,7 @@ type Client interface {
 	DescribeVolumes(input *ec2.DescribeVolumesInput) (*ec2.DescribeVolumesOutput, error)
 	GetCallerIdentity(input *sts.GetCallerIdentityInput) (*sts.GetCallerIdentityOutput, error)
 	ListHostedZonesByName(input *route53.ListHostedZonesByNameInput) (*route53.ListHostedZonesByNameOutput, error)
+	DeleteHostedZonesByName(input *route53.DeleteHostedZoneInput) (*route53.DeleteHostedZoneOutput, error)
 	TerminateInstances(input *ec2.TerminateInstancesInput) (*ec2.TerminateInstancesOutput, error)
 }
 
@@ -411,6 +412,21 @@ func (c *awsClient) ListHostedZonesByName(input *route53.ListHostedZonesByNameIn
 
 	return result, nil
 
+}
+
+func (c *awsClient) DeleteHostedZonesByName(input *route53.DeleteHostedZoneInput) (
+	*route53.DeleteHostedZoneOutput, error) {
+	result, err := c.route53Client.DeleteHostedZone(input)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			default:
+				return nil, aerr
+			}
+		}
+		return nil, err
+	}
+	return result, nil
 }
 
 func (c *awsClient) TerminateInstances(input *ec2.TerminateInstancesInput) (*ec2.TerminateInstancesOutput, error) {
