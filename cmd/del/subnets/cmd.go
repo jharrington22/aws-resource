@@ -42,12 +42,12 @@ var (
 
 // Cmd represents the snapshots command
 var Cmd = &cobra.Command{
-	Use:     "snapshots",
-	Aliases: []string{"snapshot"},
-	Short:   "Delete EBS snapshots",
-	Long: `Delete EBS snapshots for all or a specific region
+	Use:     "subnets",
+	Aliases: []string{"subnet"},
+	Short:   "Delete subnets",
+	Long: `Delete subnets for all or a specific region
 
-aws-resource delete snapshots --region <region name>`,
+aws-resource delete subnets --region <region name>`,
 	RunE: run,
 }
 
@@ -71,7 +71,7 @@ func run(cmd *cobra.Command, args []string) (err error) {
 		reporter.Warnf("Dry run %t will delete resources", dryRun)
 	}
 
-	var snapshots []*ec2.Snapshot
+	var snapshots []*ec2.Subnet
 	if allRegions {
 		reporter.Infof("Deleting ebs snapshots in all regions")
 		regions, err := awsClient.DescribeRegions(&ec2.DescribeRegionsInput{})
